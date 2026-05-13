@@ -1,0 +1,948 @@
+SKILLS SEARCH MODULE - ARCHITECTURE & FUNCTIONAL REQUIREMENTS PROPOSAL 
+
+======================================================================= 
+
+Project : OWT Employee App 
+
+Date : 12/05/2026 
+
+Author: Quynh Ho 
+
+Status : Proposal - Pending Approval 
+
+======================================================================= 
+
+ 
+
+1. PURPOSE & CONTEXT                                                            
+
+OWT is a software company with around 60 employees. When staffing a new project, admins currently have no efficient way to find the right people. They rely on memory or manually browsing profiles. This feature solves that: a single search lets the admin find employees whose skills and experience match the project’s requirements in seconds, not hours.   
+
+2. OBJECTIVE 
+
+Build a skills search feature that allows admins to find employees whose skills match a project's requirements. 
+
+Both tiers below are in scope. They are implemented sequentially.  
+
+    Tier 1 ships first as a standalone usable feature.  
+
+    Tier 2 adds on top in a separate ticket.  
+
+This proposal documents the full architecture for both tiers upfront so that Tier 1 is built with Tier 2 in mind (no rework needed when Tier 2 is added). 
+
+ 
+
+Phase 1 - Tier 1: Keyword Search (implement first) 
+
+    Fast structured SQL queries over skill/proficiency tables. 
+
+    Deliverable: admin can search employees by skill, level, position. 
+
+    Standalone - works without any embedding infrastructure. 
+
+ 
+
+Phase 2 - Tier 2: Hybrid Semantic Search (implement after) 
+
+Combines Tier 1 with vector similarity search over employee CVs, experience records, and training logs. 
+
+    This is RAG minus the Generation step - retrieve and rank, not generate. 
+
+    Deliverable: admin can also search by free text natural language query. 
+
+    Depends on: pgvector extension + embedding service (Python FastAPI). 
+
+ 
+
+3. TECHNOLOGY DECISIONS 
+
+3.1 Vector Database: pgvector 
+
+The project already uses PostgreSQL. pgvector is a PostgreSQL extension - no additional infrastructure, no extra service to deploy or maintain. 
+
+Exact cosine similarity (no approximate index needed at 60 employees). 
+
+Alternatives considered and ruled out: Qdrant, Weaviate, Milvus, Chroma, LanceDB, Elasticsearch, Typesense — all require a separate service. 
+
+ 
+
+3.2 Embedding Model: all-MiniLM-L6-v2 
+
+    384-dimension vectors 
+
+    Runs on CPU (no GPU required) 
+
+    Well-tested for semantic similarity tasks 
+
+    Token limit: 256 tokens per chunk (input beyond this is silently truncated - chunking strategy in Section 4 is designed around this limit) 
+
+    Can be swapped for a better model later without changing architecture 
+
+ 
+
+3.3 Embedding Runtime: Python FastAPI service 
+
+Since the project is migrating from NestJS to Python + FastAPI, the embedding service is built as part of the new Python backend - not a throwaway sidecar. NestJS calls it via HTTP during the transition period. 
+
+After migration, everything is already in Python. Zero throwaway work. 
+
+Library choice: onnxruntime over sentence_transformers: 
+
+sentence_transformers pulls in PyTorch (~1.5 GB) as a dependency. 
+
+For CPU-only inference on a small dataset this is disproportionate for a production internal app. Use onnxruntime + the ONNX export of all-MiniLM-L6-v2 instead (~50 MB) - lighter, faster cold start, no PyTorch in production. 
+
+Trade-off: onnxruntime requires manually handling tokenization, padding, attention masks, and mean pooling (~20 lines vs 3 lines with sentence_transformers). If implementation complexity becomes a blocker, sentence_transformers is the fallback - the rest of the architecture is unaffected by this swap. 
+
+ 
+
+from onnxruntime import InferenceSession 
+
+from tokenizers import Tokenizer 
+
+# Load model once at startup, reuse for all requests 
+
+ 
+
+Security: 
+
+The /embed endpoint is internal - called only by the NestJS/FastAPI app. It must be protected with a shared secret header (X-Internal-Token) and bound to localhost or an internal network interface only. This prevents any external process from embedding arbitrary text through the service. 
+
+ 
+
+Example: 
+
+@router.post("/embed") 
+
+def embed(text: str, token: str = Header(..., alias="X-Internal-Token")): 
+
+if token != settings.INTERNAL_TOKEN: 
+
+raise HTTPException(status_code=401) 
+
+return {"vector": model.encode(text).tolist()} 
+
+ 
+
+ 
+
+ 
+
+ 
+
+4. INDEX TABLE DESIGN 
+
+CREATE EXTENSION IF NOT EXISTS vector; 
+
+-- Naming note: table is 'users' (not 'employees') — confirmed from entity 
+
+-- decorators and migrations. Column name employee_id follows existing 
+
+-- convention used in timesheets table (employee_id FK → users.id). 
+
+-- field_type values match actual table names in this codebase: 
+
+-- 'training' → trainings table (NOT 'training_log' — does not exist) 
+
+-- 'experience' → experiences table (added: mentioned in task description 
+
+-- but omitted from original schema spec) 
+
+-- 'task' → task_assignments table (short alias) 
+
+-- 'cv' → cv_overview.introduction field in users module 
+
+ 
+
+CREATE TABLE skills_search_index ( 
+
+id SERIAL PRIMARY KEY, 
+
+employee_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE, 
+
+field_type TEXT NOT NULL 
+
+CHECK (field_type IN ('cv', 'experience', 'training', 'task')), 
+
+source_id INT, 
+
+-- source_id is NULL for field_type = 'cv' (no separate source row). 
+
+-- Required for 'experience', 'training', 'task' — references the 
+
+-- originating row id for traceability and re-index targeting. 
+
+chunk_text TEXT NOT NULL, -- original text chunk that was embedded 
+
+embedding VECTOR(384) NOT NULL, 
+
+metadata JSONB NOT NULL DEFAULT '{}', 
+
+-- Structured data extracted from chunk_text for display and filtering. 
+
+-- Schema varies by field_type: 
+
+-- 
+
+-- field_type = 'experience': 
+
+-- { 
+
+-- "skills": ["Java", "Node.js"], -- skills used in project 
+
+-- "domain": "banking", -- project domain 
+
+-- "project": "Core Banking System", -- project name 
+
+-- "date_from": "2020-01", 
+
+-- "date_to": "2022-06" -- null if currently working 
+
+-- “years":  2  	-- computed from date_from/date_to 
+
+-- 		-- for easy filtering: 
+
+-- 		-- WHERE metadata->>'years' >= '3' 
+
+-- } 
+
+-- 
+
+-- field_type = 'training': 
+
+-- { 
+
+-- "title": "Advanced React", 
+
+-- "topic": "Frontend", 
+
+-- "level": "Advanced", 
+
+-- "date": "2023-03" 
+
+-- } 
+
+-- 
+
+-- field_type = 'task': 
+
+-- { 
+
+-- "title": "Build payment gateway integration", 
+
+-- "skills": ["Node.js", "PostgreSQL"], 
+
+-- "completed_at":"2024-01-15" 
+
+-- } 
+
+-- 
+
+-- field_type = 'cv': 
+
+-- { 
+
+-- "position": "Senior Backend Developer", 
+
+-- "summary": "8 years experience in fintech..." 
+
+-- } 
+
+updated_at TIMESTAMP DEFAULT NOW() 
+
+); 
+
+ 
+
+-- GIN index for fast JSONB filtering (e.g. WHERE metadata @> '{"domain":"banking"}') 
+
+CREATE INDEX idx_skills_search_metadata ON skills_search_index USING GIN (metadata); 
+
+ 
+
+CREATE INDEX idx_skills_search_employee ON skills_search_index(employee_id); 
+
+CREATE INDEX idx_skills_search_field_type ON skills_search_index(field_type); 
+
+ 
+
+No IVFFlat approximate index needed — exact cosine similarity is instant at 60 employees. Add IVFFlat only if headcount exceeds ~500. 
+
+What gets indexed per employee - CHUNKING STRATEGY:  
+
+all-MiniLM-L6-v2 has a hard 256-token limit. Text beyond that is silently truncated. Every source field is handled to stay within this limit. 
+
+ 
+
+Source 
+	
+
+Field 
+	
+
+Chunking Strategy 
+
+CV 
+	
+
+cv_overview.introduction 
+	
+
+Single chunk (short summary, fits within 256 tokens). The full cv.cv document is NOT embedded directly — it is too long and would be truncated. Use the introduction as the CV proxy. 
+
+Experience 
+	
+
+roles_and_responsibilities 
+	
+
+One chunk per experience row. Truncate to 256 tokens if needed. (varchar 1024 ≈ ~200 tokens, safe.) 
+
+Experience 
+	
+
+description 
+	
+
+One chunk per experience row. Combined with project name as prefix: "[ProjectName]: [description]" 
+
+Training 
+	
+
+training_title + training_description 
+	
+
+One chunk per training row. Combined: "[Title]: [Description]". Truncate to 256 tokens if needed. 
+
+Task (DONE only, assignees only) 
+	
+
+title + details 
+	
+
+One chunk per DONE task (assignees only, not createdBy). Combined: "[Title]: [Details]". Truncate to 256 tokens if needed. 
+
+ 
+
+Index refresh: Real-time async re-index after every save. 
+
+    At 60 employees, re-embedding one record takes ~10–50ms. 
+
+    Re-index runs as a non-blocking background task after the HTTP response is returned to the client. Save feels instant; index updates within seconds. 
+
+    Failure handling: fire-and-forget with error logging. If the embedding service is unavailable, the failure is logged and the stale index persists until the next successful save or a manual rebuild. This is acceptable for an internal tool at this scale. 
+
+    Admin can trigger a re-index for a specific employee via PUT /api/v1/admin/skills-search/employees/:id to recover from stale index. 
+
+    Hooks needed: CV save, experience save (create/update/delete), training save. 
+
+ 
+
+Deactivated employees: When a user is set to is_active = false (standard offboarding path), their index rows are NOT deleted. Instead, all search queries filter by users.is_active = true at query time. This avoids unnecessary index churn and allows reactivation without re-indexing. 
+
+Hard deletes (users.id removed) are handled by ON DELETE CASCADE. 
+
+ 
+
+5. SEARCH PARAMETERS / INPUT 
+
+5.1 Structured Inputs (Tier 1 - Keyword) 
+
+Parameter 
+	
+
+Type 
+	
+
+Description 
+	
+
+Example 
+
+skills 
+	
+
+int[] 
+	
+
+One or more skill IDs 
+	
+
+[1, 5, 12] 
+
+skill_operator 
+	
+
+AND / OR 
+	
+
+Must have ALL vs. ANY skill 
+	
+
+AND 
+
+skill_groups 
+	
+
+int[] 
+	
+
+Filter by skill category 
+	
+
+[2] = “Backend” 
+
+min_level 
+	
+
+int 1–5 
+	
+
+Minimum proficiency 
+
+Default: 1 (excludes level 0 
+
+“declared only” entries) 
+	
+
+3 = intermediate+ 
+
+position_ids 
+	
+
+int[] 
+	
+
+Filter by job title 
+	
+
+[1, 2] 
+
+include_experience_ skills 
+	
+
+boolean 
+	
+
+Match skills used in past projects 
+	
+
+true 
+
+include_trainings 
+	
+
+boolean 
+	
+
+Match training records 
+	
+
+true 
+
+active_only 
+	
+
+boolean 
+	
+
+Active employees only 
+
+Default: true 
+	
+
+true 
+
+ 
+
+ 
+
+5.2 Semantic Input (Tier 2 - Free Text) 
+
+Parameter 
+	
+
+Type 
+	
+
+Description 
+
+free_text 
+	
+
+string 
+	
+
+Natural language query e.g. “React developer with e-commerce exp” 
+
+semantic_sources 
+	
+
+string[] 
+	
+
+Which content types to search 
+
+Default: ["cv", "experience", "training"] 
+
+Options: "cv", "experience", "training", "task" 
+
+ 
+
+5.3 Results 
+
+No pagination. At 60 employees, all matching results are returned in a single 
+
+response. Sort order is controlled by sort_by and sort_order parameters. 
+
+Pagination can be introduced if headcount grows beyond 200. 
+
+Parameter 
+	
+
+Default 
+	
+
+Description 
+
+sort_by 
+	
+
+relevance 
+	
+
+See sort options in Section 6.2 
+
+sort_order 
+	
+
+DESC 
+	
+
+ 
+
+ 
+
+How Tier 1 and Tier 2 combine: 
+
+    Keyword only → Tier 1 SQL query only 
+
+    Free text only → Tier 2 vector search only 
+
+    Both → Keyword filters first → semantic reranks survivors final_score = (keyword_score × 0.6) + (semantic_score × 0.4) 
+
+Score weights are defined as named constants in code:  
+
+KEYWORD_WEIGHT = 0.6 
+
+SEMANTIC_WEIGHT = 0.4 
+
+These are the single place to change weighting. No config table needed at this scale. 
+
+ 
+
+5.4 Free Text Query Processing (Tier 2) 
+
+Step-by-step flow when admin enters free text: 
+
+    Admin inputs: “React developer with e-commerce experience” 
+
+    Preprocessing (before embedding): 
+
+    Strip HTML/markdown tags if present 
+
+    Normalize whitespace (collapse multiple spaces/newlines) 
+
+    Truncate to 256 tokens if exceeded (hard limit of all-MiniLM-L6-v2) Note: do NOT lowercase or remove stop words — the transformer model handles these naturally and needs full context for best results. 
+
+    Embed the query: POST /embed { “text”: “React developer with e-commerce experience” } Returns: vector[384] → [0.021, -0.143, 0.087, …] Same model (all-MiniLM-L6-v2) used for both indexing and querying — this is required for cosine similarity to be meaningful. 
+
+    pgvector cosine similarity search: SELECT employee_id, chunk_text, metadata, 1 - (embedding <=> query_vector) AS score FROM skills_search_index JOIN users ON users.id = employee_id WHERE users.is_active = true ORDER BY score DESC 
+
+    Aggregate by employee: Group results by employee_id. Take max score per employee (best matching chunk wins). 
+
+    Combine with keyword score (if structured filters also provided): final_score = (keyword_score × 0.6) + (semantic_score × 0.4) 
+
+    Return ranked employee list with matched chunk_text as semantic excerpt and metadata for display. 
+
+5.5 chunk_text Preprocessing (at index time) 
+
+Step 
+	
+
+Apply? 
+	
+
+Reason 
+
+Strip HTML 
+	
+
+Yes 
+	
+
+CV/experience content may contain HTML tags. 
+
+Normalize whitespace 
+	
+
+Yes 
+	
+
+Avoid wasting tokens on extra whitespace. 
+
+Add context prefix 
+	
+
+Yes 
+	
+
+Prefixing with field context improves relevance, e.g. "[ProjectName]: [description]" or "[TrainingTitle]: [description]". 
+
+Truncate to 256 tokens 
+	
+
+Yes (required) 
+	
+
+Hard model limit - text beyond 256 tokens is silently truncated. 
+
+Lowercase 
+	
+
+No 
+	
+
+The transformer model handles case sensitivity natively. 
+
+Remove stop words 
+	
+
+No 
+	
+
+Transformer models require full natural-language context. 
+
+Stemming / lemmatization 
+	
+
+No 
+	
+
+Not necessary for transformer-based embedding models. 
+
+ 
+
+6. SEARCH RESULTS DISPLAY 
+
+6.1 Result Card per Employee 
+
+Field 
+	
+
+Source 
+
+Full name + photo 
+	
+
+users table 
+
+Position 
+	
+
+positions, levels tables 
+
+Matched skills 
+	
+
+user_skills — only skills that matched the query, shown with proficiency level badge (1–5) 
+
+All skills 
+	
+
+Collapsed expandable list 
+
+Matched from experience 
+	
+
+Project name + date range where skill was used 
+
+Matched from training 
+	
+
+Training title + topic + date 
+
+Semantic excerpt 
+	
+
+Highlighted chunk_text that triggered the match (Tier 2 only) — display as plain text, highlighting TBD 
+
+Relevance indicator 
+	
+
+Internal ranking score — whether to display: TBD 
+
+ 
+
+6.2 Sort Options 
+
+Sort key 
+	
+
+Description 
+
+relevance (default) 
+	
+
+Combined keyword + semantic score 
+
+skill_level 
+	
+
+Highest proficiency level for matched skills 
+
+skill_count 
+	
+
+Number of matched skills 
+
+experience_recency 
+	
+
+Most recent project using the matched skill 
+
+tenure 
+	
+
+Longest-serving employees first 
+
+name 
+	
+
+Alphabetical 
+
+ 
+
+ 
+
+6.3 Post-Search Filter Chips (refine after results load) 
+
+    Skill group 
+
+    Position 
+
+    Match source: Skill Profile / Project Experience / Training / CV 
+
+7. API ENDPOINTS 
+
+Phase 1 (Tier 1 — Keyword Search): 
+
+POST   /api/v1/skills-search 
+   Body: SearchRequestDto (Section 5.1 parameters only) 
+   Response: EmployeeSearchResultDto[] 
+   Note: free_text and semantic_sources fields ignored until Phase 2. 
+
+Phase 2 (Tier 2 — adds to existing endpoint + new admin endpoints): 
+
+POST   /api/v1/skills-search 
+   Body: SearchRequestDto (full — Section 5.1 + 5.2) 
+   Response: EmployeeSearchResultDto[]   (same shape, richer ranking) 
+ 
+PUT    /api/v1/admin/skills-search/employees/:id 
+   Trigger full re-index of one employee (CV + experience + training + task). 
+   Called when multiple fields change at once or manual refresh needed. 
+   Response: 202 Accepted 
+ 
+DELETE /api/v1/admin/skills-search/employees/:id 
+   Remove all skills_search_index rows for this employee. 
+   Called on hard delete or deactivation (soft delete). 
+   Note: hard deletes are also handled automatically by ON DELETE CASCADE. 
+   Response: 204 No Content 
+
+Access control: Admin-only (confirm with stakeholder before implementing guard). 
+
+8. MODULE STRUCTURE 
+
+Note: The skills search module is written in Python + FastAPI, consistent with the ongoing migration from NestJS. NestJS is not used for this feature. 
+
+ 
+
+Phase 1 files (Tier 1 — built first): 
+
+app/modules/skills_search/ 
+
+├── router.py endpoints (POST /skills-search) 
+
+├── service.py orchestrator (Tier 1 only in Phase 1) 
+
+├── keyword_search.py SQL-based structured search 
+
+└── schemas.py Pydantic schemas:    	- SearchRequestDto (free_text 						optional, ignored until Phase 2) 
+
+- EmployeeSearchResultDto 
+
+ 
+
+Note: skills_search_index table is created in Phase 1 migration, empty until Phase 2 indexing pipeline is built. 
+
+ 
+
+Phase 2 additions (Tier 2 - added on top, no rework of Phase 1): 
+
+app/modules/skills_search/ 
+
+├── semantic_search.py          # pgvector cosine similarity queries 
+
+├── indexing.py                 # chunking, embedding, and upsert to index table 
+
+├── constants.py                # search weight configuration 
+
+│                               # KEYWORD_WEIGHT = 0.6 
+
+│                               # SEMANTIC_WEIGHT = 0.4 
+
+└── service.py                 # integrate semantic reranking into search 					   flow 
+
+app/shared/ 
+
+└── embedding_service.py        # HTTP client for Python /embed endpoint 
+
+                                # includes X-Internal-Token header 
+
+Python embedding service (Phase 2, inside FastAPI migration project): 
+
+app/modules/embedding/ 
+
+├── router.py 	# POST /embed endpoint (internal, localhost-only) 
+
+├── model.py 	# ONNX Runtime model loader 
+
+│ 			# loads once at startup and reuses across requests 
+
+└── schemas.py  # EmbedRequest, EmbedResponse 
+
+ 
+
+9. ARCHITECTURE DECISIONS  
+
+Decision 
+	
+
+Resolved To 
+
+Vector DB 
+	
+
+pgvector (PostgreSQL extension, no extra service) 
+
+Embedding model 
+	
+
+all-MiniLM-L6-v2 (384 dims, 256-token limit, CPU, swappable) 
+
+Embedding library 
+	
+
+onnxruntime + tokenizers (~50 MB, not sentence_ transformers ~1.5 GB) 
+
+Embedding runtime 
+	
+
+Python FastAPI service (inside migration project, not throwaway), localhost-only, X-Internal-Token auth 
+
+Index approximation 
+	
+
+Exact cosine similarity (60 employees, instant). Add IVFFlat only if headcount exceeds ~500. 
+
+CV chunking 
+	
+
+cv_overview.introduction only (full cv.cv exceeds 256-token model limit and would be silently truncated) 
+
+Index freshness 
+	
+
+Real-time async re-index on every save (non-blocking, fire-and-forget with error logging) 
+
+Index failure handling 
+	
+
+Log error, persist stale index, admin can force rebuild 
+
+Task scope 
+	
+
+DONE tasks only, assignees only (not createdBy) 
+
+Default min_level 
+	
+
+1 (excludes level 0 “declared but no proficiency”) 
+
+Default active_only 
+	
+
+true (inactive employees filtered at query time, index rows kept for potential reactivation) 
+
+Pagination 
+	
+
+None — return all results (max 60); add if > 200 
+
+Score weights 
+	
+
+Named constants: KEYWORD_WEIGHT=0.6, SEMANTIC_WEIGHT=0.4 
+
+Access control 
+	
+
+Admin-only (pending stakeholder confirmation) 
+
+Search strategy 
+	
+
+Keyword filter first → semantic rerank on survivors 
+
+ 
+
+10. OPEN ITEMS (PENDING CONFIRMATION) 
+
+    Show relevance score to admin in the UI? 
+
+    Admin-only access confirmed? 
+
+    Semantic excerpt: plain text or highlighted in UI? 
+
+ 
+
+11. VERIFICATION (END-TO-END TEST PLAN) 
+
+Phase 1 - Keyword Search: 
+
+    Seed 5 test employees with known skills, experiences, training records 
+
+    Keyword AND search → verify only employees with ALL skills returned 
+
+    Keyword OR search → verify employees with ANY skill returned 
+
+    min_level filter → verify level-0 employees excluded by default 
+
+    active_only filter → verify deactivated employee excluded from results 
+
+    Sort by skill_level, name → verify correct order 
+
+    Non-admin user hits endpoint → verify 403 response 
+
+Phase 2 — Semantic Search: 
+
+    Embed test employees → run free text query → verify semantic ranking 
+
+    Hybrid search (skills + free_text) → verify combined score ranking 
+
+    Update an experience → verify index updates within seconds → re-query 
+
+    Delete an employee → verify rows removed from skills_search_index 
+
+    Shut down embedding service → save an experience → verify save succeeds, error is logged, stale index persists → /index/rebuild → verify updated 
