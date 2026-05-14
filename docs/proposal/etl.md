@@ -1,4 +1,4 @@
-# ETL — Detail Specification
+# ETL
 
 The ETL pipeline extracts raw employee data, transforms it into text chunks, generates vector embeddings, and loads them into pgvector. It runs on initial load and incrementally as source data changes.
 
@@ -23,6 +23,8 @@ The pipeline is triggered in three cases:
 | **pgvector** | PostgreSQL extension that stores and queries `VECTOR(384)` embeddings in `skills_search_index` |
 | **all-MiniLM-L6-v2** | Embedding model (ONNX runtime); converts `chunk_text` into 384-dim vectors at index time and query time |
 | **GPT-4.1 mini** | Strips boilerplate and filler from `normalized_text` while preserving all skills, tools, project names, domains, dates, and outcomes — producing a compact `ai_search_text` that improves embedding quality without distorting the original signal |
+
+The `ai_search_text` and `metadata` produced here are reused directly by the query layer — see [query.md](query.md).
 
 ---
 
@@ -254,31 +256,29 @@ Filler sentence (“I am a hardworking team player...”) removed. All skills, p
 
 Before chunking, extract structured facts from the rewritten text and the source record. These are stored in the `metadata` JSONB column alongside each chunk — never embedded in `chunk_text`.
 
-**Fixed fields** (every row, regardless of `field_type`):
+**Fixed fields** (every chunk, regardless of source):
 
 | Field | Type | Source |
 |---|---|---|
 | `employee_id` | int | source record FK |
-| `field_type` | string | `'cv'` / `'experience'` / `'training'` / `'task'` |
 | `skills` | `string[]` | resolved from `experience_skills`, `user_skills`, or AI extraction |
 | `date_from` | `string\|null` | `YYYY-MM` from source dates |
 | `date_to` | `string\|null` | `YYYY-MM` from source dates, null if ongoing |
 
-**Type-specific additional fields:**
+**Source-specific fields** (included when present in the source record):
 
-| `field_type` | Extra metadata fields |
+| Source | Extra metadata fields |
 |---|---|
-| `cv` | `”position”` (customPosition), `”summary”` (first sentence of introduction) |
-| `experience` | `”project”` (projectName), `”domain”`, `”years”` (int, computed from dateFrom/dateTo) |
-| `training` | `”title”` (trainingTitle), `”topic”` (topic.label), `”level”` (level.label) |
-| `task` | `”title”` (task title), `”category”` (category.label) |
+| cv | `”position”` (customPosition), `”summary”` (first sentence of introduction) |
+| experience | `”project”` (projectName), `”domain”`, `”years”` (int, computed from dateFrom/dateTo) |
+| training | `”title”` (trainingTitle), `”topic”` (topic.label), `”level”` (level.label) |
+| task | `”title”` (task title), `”category”` (category.label) |
 
 **Result after Step 3** (extracted from the source record and `ai_search_text` from Step 2):
 
 ```json
 {
   “employee_id”: 42,
-  “field_type”: “experience”,
   “skills”: [“React”, “Node.js”, “TypeScript”, “PostgreSQL”, “AWS”, “Docker”, “GitHub Actions”],
   “date_from”: “2021-03”,
   “date_to”: “2023-08”,
@@ -288,7 +288,7 @@ Before chunking, extract structured facts from the rewritten text and the source
 }
 ```
 
-`skills` is the union of linked `experience_skills` (React, Node.js, TypeScript, PostgreSQL, AWS) and skills extracted by the AI from `ai_search_text` (Docker, GitHub Actions). `years` is computed from `dateFrom`/`dateTo`.
+`skills` is the union of linked `experience_skills` (React, Node.js, TypeScript, PostgreSQL, AWS) and skills extracted by the AI from `ai_search_text` (Docker, GitHub Actions). `years` is computed from `dateFrom`/`dateTo`. No `field_type` — all sources for an employee share the same chunk pool.
 
 ---
 
@@ -376,7 +376,6 @@ After Transform (Steps 1–5), each chunk — now carrying its `chunk_text`, `em
 CREATE TABLE skills_search_index (
   id              BIGSERIAL PRIMARY KEY,
   employee_id     INT          NOT NULL,
-  field_type      VARCHAR(32)  NOT NULL,   -- 'cv' | 'experience' | 'training' | 'task'
   chunk_index     INT          NOT NULL,
   chunk_text      TEXT         NOT NULL,
   normalized_text TEXT,
@@ -385,22 +384,23 @@ CREATE TABLE skills_search_index (
   metadata        JSONB        NOT NULL DEFAULT '{}',
   indexed_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
-  UNIQUE (employee_id, field_type, chunk_index)
+  UNIQUE (employee_id, chunk_index)
 );
 
 CREATE INDEX ON skills_search_index USING GIN (metadata);
 ```
 
-`preprocess_version`, `token_count`, `char_start`, and `char_end` are stored inside `metadata` rather than as top-level columns — they are diagnostic fields, not query targets, so JSONB is the right place for them.
+`field_type` is not a column — all chunks for an employee (from CV, experience, training, task) share the same pool, keyed only by `employee_id`. `preprocess_version`, `token_count`, `char_start`, and `char_end` are stored inside `metadata` as diagnostic fields.
 
 ### Write strategy
 
 On each indexing run for an employee, the pipeline:
 
-1. Deletes all existing rows for `(employee_id, field_type)`.
-2. Inserts the freshly computed chunks in a single transaction.
+1. Deletes all existing rows for `employee_id`.
+2. Re-extracts and re-chunks all sources (CV, experience, training, task) for that employee.
+3. Inserts the freshly computed chunks in a single transaction.
 
-This avoids partial state: either the full new index is present, or the old one is. Never a mix.
+This avoids partial state: either the full new index is present, or the old one is. Never a mix. Because all sources are re-indexed together, there is no risk of stale chunks from one source surviving alongside fresh chunks from another.
 
 ### Example — final rows loaded for employee 42
 
@@ -411,11 +411,10 @@ The two chunks produced in Step 4 and encoded in Step 5 become two rows:
 | Column | Value |
 |---|---|
 | `employee_id` | `42` |
-| `field_type` | `"experience"` |
 | `chunk_index` | `0` |
 | `chunk_text` | `"Experience: Full-Stack Developer, ShopCore project, e-commerce, 2021-2023. Built product catalog and checkout with React, Node.js; integrated Stripe, reduced checkout latency 30%. PostgreSQL migrations, AWS ECS deployment."` |
 | `embedding` | `[0.0312, -0.0451, 0.0178, ..., 0.0289]` *(384 floats, L2-normalized)* |
-| `metadata` | `{"employee_id":42,"field_type":"experience","skills":["React","Node.js","TypeScript","PostgreSQL","AWS","Docker","GitHub Actions"],"date_from":"2021-03","date_to":"2023-08","project":"ShopCore","domain":"e-commerce","years":2,"preprocess_version":1,"token_count":48,"char_start":0,"char_end":221}` |
+| `metadata` | `{"employee_id":42,"skills":["React","Node.js","TypeScript","PostgreSQL","AWS","Docker","GitHub Actions"],"date_from":"2021-03","date_to":"2023-08","project":"ShopCore","domain":"e-commerce","years":2,"preprocess_version":1,"token_count":48,"char_start":0,"char_end":221}` |
 | `indexed_at` | `2025-05-14T08:23:11Z` |
 
 **Row 2 (chunk_index = 1):**
@@ -423,9 +422,8 @@ The two chunks produced in Step 4 and encoded in Step 5 become two rows:
 | Column | Value |
 |---|---|
 | `employee_id` | `42` |
-| `field_type` | `"experience"` |
 | `chunk_index` | `1` |
 | `chunk_text` | `"Experience: PostgreSQL migrations, AWS ECS deployment. Microservices migration: defined service boundaries, ADRs, onboarded 2 junior devs. TypeScript, Docker, GitHub Actions CI/CD."` |
 | `embedding` | `[0.0198, -0.0374, 0.0521, ..., -0.0112]` *(384 floats, L2-normalized)* |
-| `metadata` | `{"employee_id":42,"field_type":"experience","skills":["React","Node.js","TypeScript","PostgreSQL","AWS","Docker","GitHub Actions"],"date_from":"2021-03","date_to":"2023-08","project":"ShopCore","domain":"e-commerce","years":2,"preprocess_version":1,"token_count":40,"char_start":175,"char_end":354}` |
+| `metadata` | `{"employee_id":42,"skills":["React","Node.js","TypeScript","PostgreSQL","AWS","Docker","GitHub Actions"],"date_from":"2021-03","date_to":"2023-08","project":"ShopCore","domain":"e-commerce","years":2,"preprocess_version":1,"token_count":40,"char_start":175,"char_end":354}` |
 | `indexed_at` | `2025-05-14T08:23:11Z` |
