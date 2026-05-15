@@ -4,6 +4,63 @@ The query layer handles incoming search requests.. It accepts a natural language
 
 ---
 
+## Example Input & Output
+
+The endpoint accepts a free-text natural language query. The response shape depends on the intent of the query.
+
+---
+
+### Find employees by skill / requirement
+
+**Input:**
+```
+"Who has Java backend experience and good English?"
+```
+
+**Output** — ranked list of matching employees:
+
+| # | Employee | Skills | Match reason |
+|---|---|---|---|
+| 1 | Nguyen Van A | Java, Spring Boot, English (C1) | Strong Java backend, English proficiency confirmed in CV |
+| 2 | Tran Thi B | Java, Hibernate, English (B2) | Java backend experience, intermediate English |
+| 3 | Le Van C | Java, Node.js, English (B1) | Java experience, basic English |
+
+---
+
+### Aggregate / count query
+
+**Input:**
+```
+"How many full-stack developers do we have?"
+```
+
+**Output** — single number:
+
+```
+8
+```
+
+---
+
+### Skill lookup for a specific employee
+
+**Input:**
+```
+"Skills of John"
+```
+
+**Output** — skill list for the matched employee:
+
+| Skill | Proficiency | Source |
+|---|---|---|
+| React | Advanced (4/5) | user_skills |
+| Node.js | Intermediate (3/5) | user_skills |
+| TypeScript | Intermediate (3/5) | experience (ShopCore) |
+| PostgreSQL | Intermediate (3/5) | experience (ShopCore) |
+| Docker | Beginner (2/5) | experience (ShopCore) |
+
+---
+
 ## Processing Steps
 
 When a search query arrives, it passes through the following steps before a response is returned.
@@ -168,62 +225,5 @@ The `ai_search_text` and `metadata` already stored in `skills_search_index` (pro
 - `"count distinct matched employees above score threshold"` → return a single integer.
 - `"list skills of the matched employee"` → return the skill list from `user_skills` for the top-matched employee.
 - Any heuristic simple enough to evaluate programmatically is handled here without an LLM call.
-
----
-
-## Example Input & Output
-
-The endpoint accepts a free-text natural language query. The response shape depends on the intent of the query.
-
----
-
-### Find employees by skill / requirement
-
-**Input:**
-```
-"Who has Java backend experience and good English?"
-```
-
-**Output** — ranked list of matching employees:
-
-| # | Employee | Skills | Match reason |
-|---|---|---|---|
-| 1 | Nguyen Van A | Java, Spring Boot, English (C1) | Strong Java backend, English proficiency confirmed in CV |
-| 2 | Tran Thi B | Java, Hibernate, English (B2) | Java backend experience, intermediate English |
-| 3 | Le Van C | Java, Node.js, English (B1) | Java experience, basic English |
-
----
-
-### Aggregate / count query
-
-**Input:**
-```
-"How many full-stack developers do we have?"
-```
-
-**Output** — single number:
-
-```
-8
-```
-
----
-
-### Skill lookup for a specific employee
-
-**Input:**
-```
-"Skills of John"
-```
-
-**Output** — skill list for the matched employee:
-
-| Skill | Proficiency | Source |
-|---|---|---|
-| React | Advanced (4/5) | user_skills |
-| Node.js | Intermediate (3/5) | user_skills |
-| TypeScript | Intermediate (3/5) | experience (ShopCore) |
-| PostgreSQL | Intermediate (3/5) | experience (ShopCore) |
-| Docker | Beginner (2/5) | experience (ShopCore) |
 
 ---
