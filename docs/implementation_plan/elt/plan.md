@@ -17,7 +17,7 @@ The ETL pipeline indexes employee data into `pgvector` for semantic search. It e
 #### T1.1 — Database schema
 
 ***Description***
-- Create `skills_search_index` table with columns: `id`, `employee_id`, `chunk_index`, `chunk_text`, `normalized_text`, `ai_search_text`, `embedding VECTOR(384)`, `metadata JSONB`, `indexed_at`
+- Create `skills_search_index` table with columns: `id`, `employee_id`, `chunk_index`, `field_type TEXT NOT NULL` (`'cv'`, `'training_log'`, `'task'`), `chunk_text`, `normalized_text`, `ai_search_text`, `embedding VECTOR(384)`, `metadata JSONB`, `indexed_at`
 - Add `UNIQUE (employee_id, chunk_index)` constraint
 - Add GIN index on `metadata`
 - Verify pgvector extension is installed and `VECTOR(384)` type is available
@@ -26,7 +26,7 @@ The ETL pipeline indexes employee data into `pgvector` for semantic search. It e
   - Allows the reconciliation job (T5.2) to compare `last_index_at` against the row's `updated_at` / `created_at` to detect rows that have changed since they were last indexed
 
 ***Deliverables***
-- `migrations/001_create_skills_search_index.sql` (idempotent): creates `skills_search_index` with all specified columns and types, enforces `UNIQUE (employee_id, chunk_index)`, adds GIN index on `metadata`; `SELECT '[1,2,3]'::vector(3);` confirms pgvector is active
+- `migrations/001_create_skills_search_index.sql` (idempotent): creates `skills_search_index` with all specified columns and types (including `field_type TEXT NOT NULL`), enforces `UNIQUE (employee_id, chunk_index)`, adds GIN index on `metadata`; `SELECT '[1,2,3]'::vector(3);` confirms pgvector is active
 - `migrations/002_add_last_index_at.sql`: adds `last_index_at TIMESTAMPTZ` (nullable, default `NULL`) to all eight source entity tables
 
 #### T1.2 — Project scaffold
