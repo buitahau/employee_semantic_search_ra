@@ -34,5 +34,4 @@ When both modes are used together, structured filters run first to narrow candid
 
 ## Docs
 
-- [`docs/proposal/v2.md`](docs/proposal/v2.md) — Architecture & functional requirements (current)
-- [`docs/proposal/v1-review.md`](docs/proposal/v1-review.md) — V1 review notes that drove v2
+- [`docs/proposal/v3.md`](docs/proposal/v3.md) — Architecture & functional requirements (current)
