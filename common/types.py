@@ -3,6 +3,22 @@ from datetime import date, datetime
 
 
 @dataclass
+class UserDetail:
+    first_name: str | None
+    last_name: str | None
+    trigram: str | None
+    company_email: str
+    gender: str                # MALE | FEMALE
+    date_of_birth: datetime | None
+    university: str | None
+    position: str | None       # positions.name
+    level: str | None          # user_levels.label (nullable FK)
+    contract_type: str         # FULLTIME | PART_TIME | INTERN
+    start_date: date
+    updated_at: datetime
+
+
+@dataclass
 class Cv:
     cv: str | None
     custom_position: str | None
@@ -66,6 +82,7 @@ class UserSkill:
 @dataclass
 class EmployeeData:
     employee_id: int
+    user_detail: UserDetail | None
     cv: Cv | None
     experiences: list[Experience]
     employment_histories: list[EmploymentHistory]
