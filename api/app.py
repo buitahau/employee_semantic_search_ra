@@ -1,6 +1,7 @@
 from fastapi import FastAPI
-from api.routers import index, search
+from api.routers import extract, index, search
 
 app = FastAPI(title="Skills Search ETL API", version="0.1.0")
+app.include_router(extract.router, tags=["extract"])
 app.include_router(index.router, tags=["index"])
 app.include_router(search.router, tags=["search"])
