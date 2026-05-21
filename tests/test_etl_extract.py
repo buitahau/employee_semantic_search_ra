@@ -240,6 +240,20 @@ def test_extract_employee_unknown_employee():
 
 
 def test_extract_employee_assembles_all_fields():
+    user_detail_row = {
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "trigram": "JDO",
+        "company_email": "jane@example.com",
+        "gender": "FEMALE",
+        "date_of_birth": _NOW,
+        "university": "MIT",
+        "position": "Engineer",
+        "level": "Senior",
+        "contract_type": "FULLTIME",
+        "start_date": _TODAY,
+        "updated_at": _NOW,
+    }
     cv_row = {
         "cv": "cv text",
         "custom_position": "Dev",
@@ -250,8 +264,9 @@ def test_extract_employee_assembles_all_fields():
 
     with patch("etl.extract._connect") as mock_connect:
         cur = _mock_cur()
-        cur.fetchone.return_value = cv_row
-        cur.fetchall.return_value = skill_rows
+        cur.fetchone.side_effect = [user_detail_row, cv_row]
+        # fetchall order: experiences, employment_histories, trainings, tasks, skills
+        cur.fetchall.side_effect = [[], [], [], [], skill_rows]
         mock_connect.return_value.__enter__ = lambda _: cur
         mock_connect.return_value.__exit__ = MagicMock(return_value=False)
 

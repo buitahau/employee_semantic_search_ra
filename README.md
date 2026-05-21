@@ -38,13 +38,25 @@ When both modes are used together, structured filters run first to narrow candid
 
 - Python 3.12
 - Two PostgreSQL instances: the source OWT employee DB and a pgvector-enabled DB for the vector store
-- The `all-MiniLM-L6-v2.onnx` model file (place it at the path set in `EMBEDDING_MODEL_PATH`)
+- The `all-MiniLM-L6-v2` ONNX model (downloaded via `scripts/download_model.py` into `models/all-MiniLM-L6-v2/`)
 
 ### Install
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+### Download the embedding model
+
+```bash
+python scripts/download_all-MiniLM-L6-v2_model.py
+```
+
+Downloads the ONNX model and tokenizer files into `models/all-MiniLM-L6-v2/`. Run it once after install. The script prints the exact `EMBEDDING_MODEL_PATH` value to set in `.env`:
+
+```
+EMBEDDING_MODEL_PATH=models/all-MiniLM-L6-v2/all-MiniLM-L6-v2.onnx
 ```
 
 ### Configure
@@ -55,7 +67,7 @@ cp .env.example .env
 #   SOURCE_DB_*        — owt-employee-app-backend database
 #   VECTOR_DB_*        — pgvector database
 #   OPENAI_API_KEY     — GPT-4.1 mini (used in the AI cleanup phase)
-#   EMBEDDING_MODEL_PATH — path to all-MiniLM-L6-v2.onnx
+#   EMBEDDING_MODEL_PATH — models/all-MiniLM-L6-v2/all-MiniLM-L6-v2.onnx
 ```
 
 ### Run migrations
