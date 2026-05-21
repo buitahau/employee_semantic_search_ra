@@ -25,6 +25,7 @@ class Cv:
     introduction: str | None
     updated_at: datetime
     metadata: dict = field(default_factory=dict)
+    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -39,6 +40,7 @@ class Experience:
     skills: list[str]
     updated_at: datetime
     metadata: dict = field(default_factory=dict)
+    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -49,6 +51,7 @@ class EmploymentHistory:
     is_currently_working: bool
     updated_at: datetime
     metadata: dict = field(default_factory=dict)
+    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -60,6 +63,7 @@ class Training:
     level_label: str | None
     updated_at: datetime
     metadata: dict = field(default_factory=dict)
+    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -69,6 +73,7 @@ class Task:
     category_label: str | None
     updated_at: datetime
     metadata: dict = field(default_factory=dict)
+    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -77,6 +82,7 @@ class UserSkill:
     level: int
     updated_at: datetime
     metadata: dict = field(default_factory=dict)
+    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass

@@ -10,6 +10,8 @@ def _get_tokenizer() -> Tokenizer:
     if _tokenizer is None:
         model_dir = Path(settings.embedding_model_path).parent
         _tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
+        _tokenizer.no_padding()
+        _tokenizer.no_truncation()
     return _tokenizer
 
 
