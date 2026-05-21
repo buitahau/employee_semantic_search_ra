@@ -8,8 +8,51 @@ from common.types import (
     Experience,
     Task,
     Training,
+    UserDetail,
     UserSkill,
 )
+
+
+def _get_user_detail(cur: RealDictCursor, employee_id: int) -> UserDetail | None:
+    cur.execute(
+        """
+        SELECT
+            u.first_name,
+            u.last_name,
+            u.trigram,
+            u.company_email,
+            u.gender,
+            u.date_of_birth,
+            u.university,
+            u.contract_type,
+            u.start_date,
+            p.name   AS position,
+            ul.label AS level,
+            u.updated_at
+        FROM users u
+        LEFT JOIN positions   p  ON p.id  = u.position_id
+        LEFT JOIN user_levels ul ON ul.id = u.level_id
+        WHERE u.id = %(employee_id)s;
+        """,
+        {"employee_id": employee_id},
+    )
+    row = cur.fetchone()
+    if row is None:
+        return None
+    return UserDetail(
+        first_name=row["first_name"],
+        last_name=row["last_name"],
+        trigram=row["trigram"],
+        company_email=row["company_email"],
+        gender=row["gender"],
+        date_of_birth=row["date_of_birth"],
+        university=row["university"],
+        position=row["position"],
+        level=row["level"],
+        contract_type=row["contract_type"],
+        start_date=row["start_date"],
+        updated_at=row["updated_at"],
+    )
 
 
 def _get_cv(cur: RealDictCursor, employee_id: int) -> Cv | None:
@@ -219,6 +262,7 @@ def extract_employee(employee_id: int) -> EmployeeData:
     with _connect() as cur:
         return EmployeeData(
             employee_id=employee_id,
+            user_detail=_get_user_detail(cur, employee_id),
             cv=_get_cv(cur, employee_id),
             experiences=_get_experiences(cur, employee_id),
             employment_histories=_get_employment_histories(cur, employee_id),
