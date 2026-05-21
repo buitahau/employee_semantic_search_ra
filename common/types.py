@@ -19,11 +19,26 @@ class UserDetail:
 
 
 @dataclass
+class ChunkRecord:
+    employee_id: int
+    field_type: str      # "cv" | "experience" | "employment_history" | "training" | "task" | "user_skill"
+    chunk_text: str
+    chunk_index: int
+    char_start: int
+    char_end: int
+    token_count: int
+    preprocess_version: str
+    embedding: list[float] | None = None
+    metadata: dict = field(default_factory=dict)
+
+
+@dataclass
 class Cv:
     cv: str | None
     custom_position: str | None
     introduction: str | None
     updated_at: datetime
+    chunks: list[ChunkRecord] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     pipeline_state: dict = field(default_factory=dict)
 
@@ -39,6 +54,7 @@ class Experience:
     is_currently_working: bool
     skills: list[str]
     updated_at: datetime
+    chunks: list[ChunkRecord] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     pipeline_state: dict = field(default_factory=dict)
 
@@ -50,6 +66,7 @@ class EmploymentHistory:
     date_to: date | None
     is_currently_working: bool
     updated_at: datetime
+    chunks: list[ChunkRecord] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     pipeline_state: dict = field(default_factory=dict)
 
@@ -62,6 +79,7 @@ class Training:
     topic_label: str | None
     level_label: str | None
     updated_at: datetime
+    chunks: list[ChunkRecord] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     pipeline_state: dict = field(default_factory=dict)
 
@@ -72,6 +90,7 @@ class Task:
     details: str | None
     category_label: str | None
     updated_at: datetime
+    chunks: list[ChunkRecord] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     pipeline_state: dict = field(default_factory=dict)
 
@@ -81,6 +100,7 @@ class UserSkill:
     skill_name: str | None
     level: int
     updated_at: datetime
+    chunks: list[ChunkRecord] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
     pipeline_state: dict = field(default_factory=dict)
 

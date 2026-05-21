@@ -2,6 +2,7 @@ from common.types import EmployeeData
 from etl.impl.transform.chunking.tokenizer import _count_tokens
 from etl.impl.transform.chunking.splitter import _split_sentences
 from etl.impl.transform.chunking.accumulator import _accumulate_windows, TOKENS_MAX
+from etl.impl.transform.chunking.builder import _make_chunks
 
 
 def _join(*values: str | None) -> str:
@@ -147,8 +148,37 @@ def _fill_windows(data: EmployeeData) -> EmployeeData:
     return data
 
 
+def _fill_chunks(data: EmployeeData) -> EmployeeData:
+    if data.cv:
+        windows = data.cv.pipeline_state.get("windows", [])
+        data.cv.chunks = _make_chunks(data.employee_id, "cv", windows, data.cv.metadata)
+
+    for exp in data.experiences:
+        windows = exp.pipeline_state.get("windows", [])
+        exp.chunks = _make_chunks(data.employee_id, "experience", windows, exp.metadata)
+
+    for hist in data.employment_histories:
+        windows = hist.pipeline_state.get("windows", [])
+        hist.chunks = _make_chunks(data.employee_id, "employment_history", windows, hist.metadata)
+
+    for training in data.trainings:
+        windows = training.pipeline_state.get("windows", [])
+        training.chunks = _make_chunks(data.employee_id, "training", windows, training.metadata)
+
+    for task in data.tasks:
+        windows = task.pipeline_state.get("windows", [])
+        task.chunks = _make_chunks(data.employee_id, "task", windows, task.metadata)
+
+    for skill in data.skills:
+        windows = skill.pipeline_state.get("windows", [])
+        skill.chunks = _make_chunks(data.employee_id, "user_skill", windows, skill.metadata)
+
+    return data
+
+
 def chunking(data: EmployeeData) -> EmployeeData:
     data = _fill_token_counts(data)
     data = _fill_sentences(data)
     data = _fill_windows(data)
+    data = _fill_chunks(data)
     return data
