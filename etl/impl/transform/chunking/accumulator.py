@@ -1,8 +1,27 @@
 from typing import Callable
 from .tokenizer import _count_tokens as _default_count_tokens, _get_tokenizer
+from common.types import EmployeeData
 
 TOKENS_MAX = 250
 OVERLAP_MIN = 40
+
+_TOKENS_MAX_BY_SOURCE: dict[str, int] = {
+    "cv": TOKENS_MAX,
+    "experience": TOKENS_MAX,
+    "employment_history": 200,
+    "training": 200,
+    "task": 200,
+    "user_skill": 200,
+}
+
+_PREFIX_BY_SOURCE: dict[str, str] = {
+    "cv": "CV: ",
+    "experience": "Experience: ",
+    "employment_history": "Employment: ",
+    "training": "Training: ",
+    "task": "Task: ",
+    "user_skill": "Skill: ",
+}
 
 
 def _token_window_split(
@@ -87,3 +106,61 @@ def _accumulate_windows(
         emit_window(current)
 
     return windows
+
+
+def _fill_windows(data: EmployeeData) -> EmployeeData:
+    if data.cv:
+        sentences = data.cv.pipeline_state.get("sentences", [])
+        if sentences:
+            data.cv.pipeline_state["windows"] = _accumulate_windows(
+                sentences,
+                prefix=_PREFIX_BY_SOURCE["cv"],
+                tokens_max=_TOKENS_MAX_BY_SOURCE["cv"],
+            )
+
+    for exp in data.experiences:
+        sentences = exp.pipeline_state.get("sentences", [])
+        if sentences:
+            exp.pipeline_state["windows"] = _accumulate_windows(
+                sentences,
+                prefix=_PREFIX_BY_SOURCE["experience"],
+                tokens_max=_TOKENS_MAX_BY_SOURCE["experience"],
+            )
+
+    for hist in data.employment_histories:
+        sentences = hist.pipeline_state.get("sentences", [])
+        if sentences:
+            hist.pipeline_state["windows"] = _accumulate_windows(
+                sentences,
+                prefix=_PREFIX_BY_SOURCE["employment_history"],
+                tokens_max=_TOKENS_MAX_BY_SOURCE["employment_history"],
+            )
+
+    for training in data.trainings:
+        sentences = training.pipeline_state.get("sentences", [])
+        if sentences:
+            training.pipeline_state["windows"] = _accumulate_windows(
+                sentences,
+                prefix=_PREFIX_BY_SOURCE["training"],
+                tokens_max=_TOKENS_MAX_BY_SOURCE["training"],
+            )
+
+    for task in data.tasks:
+        sentences = task.pipeline_state.get("sentences", [])
+        if sentences:
+            task.pipeline_state["windows"] = _accumulate_windows(
+                sentences,
+                prefix=_PREFIX_BY_SOURCE["task"],
+                tokens_max=_TOKENS_MAX_BY_SOURCE["task"],
+            )
+
+    for skill in data.skills:
+        sentences = skill.pipeline_state.get("sentences", [])
+        if sentences:
+            skill.pipeline_state["windows"] = _accumulate_windows(
+                sentences,
+                prefix=_PREFIX_BY_SOURCE["user_skill"],
+                tokens_max=_TOKENS_MAX_BY_SOURCE["user_skill"],
+            )
+
+    return data
