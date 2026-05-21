@@ -37,6 +37,7 @@ def normalize_text(text: str | None) -> str | None:
 def normalize(raw: EmployeeData) -> EmployeeData:
     return EmployeeData(
         employee_id=raw.employee_id,
+        user_detail=raw.user_detail,
         cv=_normalize_cv(raw.cv),
         experiences=[_normalize_experience(e) for e in raw.experiences],
         employment_histories=[_normalize_employment_history(h) for h in raw.employment_histories],
