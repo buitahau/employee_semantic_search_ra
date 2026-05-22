@@ -20,3 +20,21 @@ def _connect():
             yield cur
     finally:
         conn.close()
+
+
+@contextmanager
+def _vector_connect():
+    conn = psycopg2.connect(
+        host=settings.vector_db.host,
+        port=settings.vector_db.port,
+        dbname=settings.vector_db.name,
+        user=settings.vector_db.user,
+        password=settings.vector_db.password,
+    )
+    try:
+        yield conn
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
