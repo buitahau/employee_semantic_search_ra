@@ -1,7 +1,5 @@
-import dataclasses
-
 from common.db import _connect
-from common.types import EmployeeData
+from common.states import EtlPipelineState
 
 
 def get_all_skill_names() -> list[str]:
@@ -25,77 +23,21 @@ def extract_metadata(employee_id: int, skills: list[str], **optional_fields) -> 
     }
 
 
-def enrich_with_metadata(data: EmployeeData) -> EmployeeData:
+def enrich_with_metadata(state: EtlPipelineState) -> EtlPipelineState:
     skill_names = get_all_skill_names()
-    eid = data.employee_id
+    eid = state.employee_id
 
-    cv = None
-    if data.cv:
-        text = _join_texts(data.cv.cv, data.cv.introduction)
-        cv = dataclasses.replace(
-            data.cv,
-            metadata=extract_metadata(eid, detect_skills(text, skill_names)),
-        )
+    if state.cv:
+        state.cv.metadata = extract_metadata(eid, detect_skills(state.cv.text, skill_names))
+    if state.experiences:
+        state.experiences.metadata = extract_metadata(eid, detect_skills(state.experiences.text, skill_names))
+    if state.employment_histories:
+        state.employment_histories.metadata = extract_metadata(eid, detect_skills(state.employment_histories.text, skill_names))
+    if state.trainings:
+        state.trainings.metadata = extract_metadata(eid, detect_skills(state.trainings.text, skill_names))
+    if state.task:
+        state.task.metadata = extract_metadata(eid, detect_skills(state.task.text, skill_names))
+    if state.skills:
+        state.skills.metadata = extract_metadata(eid, detect_skills(state.skills.text, skill_names))
 
-    experiences = [
-        dataclasses.replace(
-            row,
-            metadata=extract_metadata(
-                eid,
-                detect_skills(_join_texts(row.description, row.roles_and_responsibilities), skill_names),
-            ),
-        )
-        for row in data.experiences
-    ]
-
-    employment_histories = [
-        dataclasses.replace(
-            row,
-            metadata=extract_metadata(eid, detect_skills(row.company, skill_names)),
-        )
-        for row in data.employment_histories
-    ]
-
-    trainings = [
-        dataclasses.replace(
-            row,
-            metadata=extract_metadata(
-                eid,
-                detect_skills(_join_texts(row.training_title, row.training_description), skill_names),
-            ),
-        )
-        for row in data.trainings
-    ]
-
-    tasks = [
-        dataclasses.replace(
-            row,
-            metadata=extract_metadata(
-                eid,
-                detect_skills(_join_texts(row.title, row.details), skill_names),
-            ),
-        )
-        for row in data.tasks
-    ]
-
-    skills = [
-        dataclasses.replace(
-            row,
-            metadata=extract_metadata(eid, detect_skills(row.skill_name, skill_names)),
-        )
-        for row in data.skills
-    ]
-
-    return dataclasses.replace(
-        data,
-        cv=cv,
-        experiences=experiences,
-        employment_histories=employment_histories,
-        trainings=trainings,
-        tasks=tasks,
-        skills=skills,
-    )
-
-
-def _join_texts(*texts: str | None) -> str:
-    return " ".join(t for t in texts if t)
+    return state

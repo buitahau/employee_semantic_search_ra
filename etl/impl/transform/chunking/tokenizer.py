@@ -1,9 +1,13 @@
 from pathlib import Path
+
 from tokenizers import Tokenizer
+
 from common.config import settings
-from common.types import EmployeeData
+from common.states import EtlPipelineState
 
 _tokenizer: Tokenizer | None = None
+
+_STATE_ATTRS = ("cv", "experiences", "employment_histories", "trainings", "task", "skills")
 
 
 def _get_tokenizer() -> Tokenizer:
@@ -20,33 +24,9 @@ def _count_tokens(text: str) -> int:
     return len(_get_tokenizer().encode(text).ids)
 
 
-def _join(*values: str | None) -> str:
-    return " ".join(v for v in values if v)
-
-
-def _fill_token_counts(data: EmployeeData) -> EmployeeData:
-    if data.cv:
-        text = _join(data.cv.cv, data.cv.custom_position, data.cv.introduction)
-        data.cv.pipeline_state["token_count"] = _count_tokens(text) if text else 0
-
-    for exp in data.experiences:
-        text = _join(exp.project_name, exp.domain, exp.description, exp.roles_and_responsibilities)
-        exp.pipeline_state["token_count"] = _count_tokens(text) if text else 0
-
-    for hist in data.employment_histories:
-        text = _join(hist.company)
-        hist.pipeline_state["token_count"] = _count_tokens(text) if text else 0
-
-    for training in data.trainings:
-        text = _join(training.training_title, training.training_description, training.topic_label, training.level_label)
-        training.pipeline_state["token_count"] = _count_tokens(text) if text else 0
-
-    for task in data.tasks:
-        text = _join(task.title, task.details, task.category_label)
-        task.pipeline_state["token_count"] = _count_tokens(text) if text else 0
-
-    for skill in data.skills:
-        text = _join(skill.skill_name)
-        skill.pipeline_state["token_count"] = _count_tokens(text) if text else 0
-
-    return data
+def _fill_token_counts(state: EtlPipelineState) -> EtlPipelineState:
+    for attr in _STATE_ATTRS:
+        entity = getattr(state, attr)
+        if entity:
+            entity.pipeline_state["token_count"] = _count_tokens(entity.text) if entity.text else 0
+    return state

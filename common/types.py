@@ -38,9 +38,6 @@ class Cv:
     custom_position: str | None
     introduction: str | None
     updated_at: datetime
-    chunks: list[ChunkRecord] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
-    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -54,9 +51,6 @@ class Experience:
     is_currently_working: bool
     skills: list[str]
     updated_at: datetime
-    chunks: list[ChunkRecord] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
-    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -66,9 +60,6 @@ class EmploymentHistory:
     date_to: date | None
     is_currently_working: bool
     updated_at: datetime
-    chunks: list[ChunkRecord] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
-    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -79,9 +70,6 @@ class Training:
     topic_label: str | None
     level_label: str | None
     updated_at: datetime
-    chunks: list[ChunkRecord] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
-    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -90,9 +78,6 @@ class Task:
     details: str | None
     category_label: str | None
     updated_at: datetime
-    chunks: list[ChunkRecord] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
-    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -100,9 +85,6 @@ class UserSkill:
     skill_name: str | None
     level: int
     updated_at: datetime
-    chunks: list[ChunkRecord] = field(default_factory=list)
-    metadata: dict = field(default_factory=dict)
-    pipeline_state: dict = field(default_factory=dict)
 
 
 @dataclass
