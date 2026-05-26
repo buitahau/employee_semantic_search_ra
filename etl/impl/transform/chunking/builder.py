@@ -1,5 +1,15 @@
 from common.constants import PREPROCESS_VERSION
-from common.types import ChunkRecord, EmployeeData
+from common.states import EtlPipelineState
+from common.types import ChunkRecord
+
+_FIELD_TYPE_BY_ATTR: dict[str, str] = {
+    "cv": "cv",
+    "experiences": "experience",
+    "employment_histories": "employment_history",
+    "trainings": "training",
+    "task": "task",
+    "skills": "user_skill",
+}
 
 
 def _make_chunks(employee_id: int, field_type: str, windows: list, metadata: dict) -> list[ChunkRecord]:
@@ -19,29 +29,10 @@ def _make_chunks(employee_id: int, field_type: str, windows: list, metadata: dic
     ]
 
 
-def _fill_chunks(data: EmployeeData) -> EmployeeData:
-    if data.cv:
-        windows = data.cv.pipeline_state.get("windows", [])
-        data.cv.chunks = _make_chunks(data.employee_id, "cv", windows, data.cv.metadata)
-
-    for exp in data.experiences:
-        windows = exp.pipeline_state.get("windows", [])
-        exp.chunks = _make_chunks(data.employee_id, "experience", windows, exp.metadata)
-
-    for hist in data.employment_histories:
-        windows = hist.pipeline_state.get("windows", [])
-        hist.chunks = _make_chunks(data.employee_id, "employment_history", windows, hist.metadata)
-
-    for training in data.trainings:
-        windows = training.pipeline_state.get("windows", [])
-        training.chunks = _make_chunks(data.employee_id, "training", windows, training.metadata)
-
-    for task in data.tasks:
-        windows = task.pipeline_state.get("windows", [])
-        task.chunks = _make_chunks(data.employee_id, "task", windows, task.metadata)
-
-    for skill in data.skills:
-        windows = skill.pipeline_state.get("windows", [])
-        skill.chunks = _make_chunks(data.employee_id, "user_skill", windows, skill.metadata)
-
-    return data
+def _fill_chunks(state: EtlPipelineState) -> EtlPipelineState:
+    for attr, field_type in _FIELD_TYPE_BY_ATTR.items():
+        entity = getattr(state, attr)
+        if entity:
+            windows = entity.pipeline_state.get("windows", [])
+            entity.chunks = _make_chunks(state.employee_id, field_type, windows, entity.metadata)
+    return state

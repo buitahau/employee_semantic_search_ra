@@ -14,7 +14,7 @@ from common.types import (
 SENTINELS = {"null", "undefined", "None"}
 
 PUNCT_MAP = str.maketrans({
-    "‘": "'", "’": "'",
+    "'": "'", "'": "'",
     "“": '"', "”": '"',
     "–": "-", "—": "-",
     "…": "...",
@@ -55,7 +55,6 @@ def _normalize_cv(row: Cv | None) -> Cv | None:
         custom_position=normalize_text(row.custom_position),
         introduction=normalize_text(row.introduction),
         updated_at=row.updated_at,
-        metadata=row.metadata,
     )
 
 
@@ -70,7 +69,6 @@ def _normalize_experience(row: Experience) -> Experience:
         is_currently_working=row.is_currently_working,
         skills=row.skills,
         updated_at=row.updated_at,
-        metadata=row.metadata,
     )
 
 
@@ -81,7 +79,6 @@ def _normalize_employment_history(row: EmploymentHistory) -> EmploymentHistory:
         date_to=row.date_to,
         is_currently_working=row.is_currently_working,
         updated_at=row.updated_at,
-        metadata=row.metadata,
     )
 
 
@@ -93,7 +90,6 @@ def _normalize_training(row: Training) -> Training:
         topic_label=normalize_text(row.topic_label),
         level_label=normalize_text(row.level_label),
         updated_at=row.updated_at,
-        metadata=row.metadata,
     )
 
 
@@ -103,7 +99,6 @@ def _normalize_task(row: Task) -> Task:
         details=normalize_text(row.details),
         category_label=normalize_text(row.category_label),
         updated_at=row.updated_at,
-        metadata=row.metadata,
     )
 
 
@@ -112,5 +107,4 @@ def _normalize_user_skill(row: UserSkill) -> UserSkill:
         skill_name=normalize_text(row.skill_name),
         level=row.level,
         updated_at=row.updated_at,
-        metadata=row.metadata,
     )

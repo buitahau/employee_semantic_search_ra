@@ -1,21 +1,13 @@
-from common.types import EmployeeData
+from common.states import EtlPipelineState
 from etl.impl.transform.chunking.embedding.encoder import embed
 
+_STATE_ATTRS = ("cv", "experiences", "employment_histories", "trainings", "task", "skills")
 
-def embed_chunks(data: EmployeeData) -> EmployeeData:
-    if data.cv is not None:
-        for chunk in data.cv.chunks:
-            chunk.embedding = embed(chunk.chunk_text)
 
-    for entity_list in (
-        data.experiences,
-        data.employment_histories,
-        data.trainings,
-        data.tasks,
-        data.skills,
-    ):
-        for entity in entity_list:
+def embed_chunks(state: EtlPipelineState) -> EtlPipelineState:
+    for attr in _STATE_ATTRS:
+        entity = getattr(state, attr)
+        if entity:
             for chunk in entity.chunks:
                 chunk.embedding = embed(chunk.chunk_text)
-
-    return data
+    return state
