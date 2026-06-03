@@ -14,66 +14,30 @@ The query layer accepts a natural language query, normalises and rewrites it via
 
 ### Phase 1 — Infrastructure & Scaffold
 
-#### T1.1 — Module scaffold & types
+#### Q1.1 — Module scaffold & types
 
 ***Description***
-- Add a `search/` top-level module alongside `etl/` with skeleton files: `normalize.py`, `rewrite.py`, `retrieve.py`, `aggregate.py`, `hydrate.py`, `respond.py`, `router.py`
-- Define shared input/output types used across all steps:
+- Add a `query/` top-level module alongside `etl/`
+- Define the initial shared input type:
 
 ```python
 @dataclass
 class QueryRequest:
     query: str
-
-@dataclass
-class RewriteResult:
-    intent:    str          # "find_employees" | "others"
-    query:     str          # keyword-dense rewrite for embedding
-    heuristic: str          # instruction for Step 5
-    filter:    dict         # structured GIN filter (may be empty)
-
-@dataclass
-class ChunkHit:
-    employee_id: int
-    chunk_text:  str
-    metadata:    dict
-    score:       float
-
-@dataclass
-class EmployeeHit:
-    employee_id: int
-    score:       float
-    skills:      list[str]
-    chunks:      list[str]  # chunk_text values as LLM evidence
-
-@dataclass
-class EmployeeDisplay:
-    employee_id: int
-    name:        str
-    position:    str | None
-    avatar:      str | None
-    score:       float
-    skills:      list[SkillDisplay]
-    match_reason: str | None   # populated only for find_employees
-
-@dataclass
-class SkillDisplay:
-    skill_name:  str
-    level:       int          # 0–5
 ```
 
-- Register the `search` router in the FastAPI app entry point
+- Register the `query` router in the FastAPI app entry point
 
 ***Deliverables***
-- `search/` directory with all skeleton files importable with no `ImportError`
-- All dataclasses defined and importable from `search/types.py`
-- Router registered: `GET /search` returns `501 Not Implemented` (placeholder)
+- `query/` directory importable with no `ImportError`
+- `QueryRequest` defined and importable from `query/types.py`
+- Router registered: `GET /search` returns `200` with `{"message": "ok"}` (placeholder)
 
 ---
 
 ### Phase 2 — Input Processing
 
-#### T2.1 — Step 1: Prompt normalisation
+#### Q2.1 — Step 1: Prompt normalisation
 
 ***Description***
 - Apply the same normalisation rules as ETL Step 1, adapted for a short query string (not long-form text):
@@ -92,7 +56,7 @@ class SkillDisplay:
 - `normalize_query(query: str) -> str` pure function: lowercases, trims, collapses whitespace, unifies punctuation; raises `ValueError` for all sentinel values (`""`, `"null"`, `"undefined"`, `None`)
 - Unit tests covering all sentinel cases and a representative normalisation example
 
-#### T2.2 — Step 2: AI prompt rewrite
+#### Q2.2 — Step 2: AI prompt rewrite
 
 ***Description***
 - Pass the normalised query to GPT-4.1 mini with a structured output prompt
@@ -122,7 +86,7 @@ class SkillDisplay:
 
 ### Phase 3 — Retrieval
 
-#### T3.1 — Step 3: Embed query & pgvector search
+#### Q3.1 — Step 3: Embed query & pgvector search
 
 ***Description***
 - Embed `RewriteResult.query` using `all-MiniLM-L6-v2` (same model and pipeline as ETL Step 5) to produce a 384-dim L2-normalised vector
@@ -152,7 +116,7 @@ LIMIT 100;
 
 ### Phase 4 — Aggregation
 
-#### T4.1 — Step 4: Employee aggregation & scoring
+#### Q4.1 — Step 4: Employee aggregation & scoring
 
 ***Description***
 - `retrieve` returns one row per chunk; multiple chunks belong to the same employee
@@ -171,7 +135,7 @@ LIMIT 100;
 
 ### Phase 5 — Hydration & Response
 
-#### T5.1 — Step 5a: Fetch full records from source DB
+#### Q5.1 — Step 5a: Fetch full records from source DB
 
 ***Description***
 - For the list of `employee_id` values in the aggregated results, fetch display-ready and structured data that is not stored in `skills_search_index`:
@@ -185,10 +149,10 @@ LIMIT 100;
 - Batch-fetch all employees in a single query (avoid N+1)
 
 ***Deliverables***
-- `hydrate(hits: list[EmployeeHit]) -> list[EmployeeDisplay]` function: batch-fetches `users` and `user_skills`+`skills` for all employee IDs in a single query each; populates `name`, `position`, `avatar`, `skills` (with `level`); `match_reason` is left `None` (populated in T5.2); unknown `employee_id` values are omitted from the result
+- `hydrate(hits: list[EmployeeHit]) -> list[EmployeeDisplay]` function: batch-fetches `users` and `user_skills`+`skills` for all employee IDs in a single query each; populates `name`, `position`, `avatar`, `skills` (with `level`); `match_reason` is left `None` (populated in Q5.2); unknown `employee_id` values are omitted from the result
 - Unit tests asserting no N+1 queries and correct field mapping
 
-#### T5.2 — Step 5b: Compute & format response
+#### Q5.2 — Step 5b: Compute & format response
 
 ***Description***
 - Branch on `RewriteResult.intent`:
@@ -218,11 +182,11 @@ LIMIT 100;
 
 ### Phase 6 — API Layer
 
-#### T6.1 — Search endpoint
+#### Q6.1 — Search endpoint
 
 ***Description***
 - `POST /search` — accepts a JSON body `{ "query": "<text>" }` and runs Steps 1–5 in sequence
-- Returns a JSON response whose shape depends on intent (see T5.2)
+- Returns a JSON response whose shape depends on intent (see Q5.2)
 - Returns `400` for sentinel / empty query (from Step 1 `ValueError`)
 - Returns `500` with a structured error body on unexpected failures; never leak internal stack traces to the client
 
@@ -260,7 +224,7 @@ Body: { "query": "Who has Java backend experience and good English?" }
 
 ### Phase 7 — Observability & Hardening
 
-#### T7.1 — Logging
+#### Q7.1 — Logging
 
 ***Description***
 - Emit structured logs at each step with consistent fields:
@@ -282,20 +246,20 @@ Body: { "query": "Who has Java backend experience and good English?" }
 - `request_id` middleware generating a UUID per request and injecting it into the logging context
 - ERROR-level log wrapper that always includes `request_id` and `step` before propagating any exception
 
-#### T7.2 — Resilience
+#### Q7.2 — Resilience
 
 ***Description***
-- `rewrite_query` LLM failure → fall back to default `RewriteResult` (already defined in T2.2)
+- `rewrite_query` LLM failure → fall back to default `RewriteResult` (already defined in Q2.2)
 - `respond` LLM failure for `find_employees` → return the aggregated list without `match_reason` (set to `None`), log as WARNING
 - Embedding failure in `retrieve` → return `500` to caller, log as ERROR, do not partially respond
-- Score threshold for `others` counts is configurable (T5.2) to avoid hard-coding business logic
+- Score threshold for `others` counts is configurable (Q5.2) to avoid hard-coding business logic
 
 ***Deliverables***
 - `respond` fallback: on any OpenAI exception for `find_employees`, returns the employee list with `match_reason: null` for all entries and emits WARNING
 - `retrieve` embedding failure: propagates as HTTP `500`; existing `skills_search_index` data is never mutated
 - Unit tests for both fallback paths asserting correct response shape and log emission
 
-#### T7.3 — Integration test
+#### Q7.3 — Integration test
 
 ***Description***
 - End-to-end test: seed known `skills_search_index` rows for two employees, call `POST /search` with a query that should match one employee more strongly, assert:
@@ -314,14 +278,14 @@ Body: { "query": "Who has Java backend experience and good English?" }
 ## Dependency Order
 
 ```
-T1.1
-T1.1 → T2.1 → T2.2
-T2.2 → T3.1
-T3.1 → T4.1
-T4.1 → T5.1 → T5.2
-T5.2 → T6.1
-T6.1 → T7.3
-T2.1–T5.2 → T7.1, T7.2
+Q1.1
+Q1.1 → Q2.1 → Q2.2
+Q2.2 → Q3.1
+Q3.1 → Q4.1
+Q4.1 → Q5.1 → Q5.2
+Q5.2 → Q6.1
+Q6.1 → Q7.3
+Q2.1–Q5.2 → Q7.1, Q7.2
 ```
 
 Phases 1–5 must be complete before Phase 6. Phase 7 runs in parallel with Phase 6 and wraps up last.
@@ -334,4 +298,4 @@ Phases 1–5 must be complete before Phase 6. Phase 7 runs in parallel with Phas
 2. **Score threshold** — `0.5` is proposed as the default for `others` count queries. Should this be tuned per intent, or is a single global threshold sufficient?
 3. **LLM response format for `find_employees`** — should GPT-4.1 mini return a structured JSON array (for reliable parsing) or free-text `match_reason` strings only (simpler prompt)?
 4. **Pagination** — the spec returns up to 100 chunks from pgvector. Should the API expose `limit` / `offset` parameters, or is a fixed cap acceptable for the current 60-employee dataset?
-5. **Auth** — is `POST /search` public (any logged-in user) or restricted to specific roles? Affects T6.1 middleware.
+5. **Auth** — is `POST /search` public (any logged-in user) or restricted to specific roles? Affects Q6.1 middleware.
