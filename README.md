@@ -81,6 +81,8 @@ psql -h $VECTOR_DB_HOST -U $VECTOR_DB_USER -d $VECTOR_DB_NAME -f migrations/<mig
 ### Start the dev server
 
 ```bash
+source .venv/bin/activate
+
 uvicorn main:app --reload
 ```
 
