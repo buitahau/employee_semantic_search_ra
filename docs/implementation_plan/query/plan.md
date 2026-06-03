@@ -64,7 +64,7 @@ class QueryRequest:
   - Correct typos and grammar (`"developper"` → `"developer"`)
   - Expand abbreviations (`"FE"` → `"frontend"`, `"BE"` → `"backend"`)
   - Remove redundant filler (`"Can you tell me who..."` → `"who..."`)
-- Return a `RewriteResult` parsed from the model's JSON output:
+- Return a `QueryAnalysis` parsed from the model's JSON output:
 
 ```json
 {
@@ -78,7 +78,7 @@ class QueryRequest:
 - On OpenAI API failure: fall back to `intent="find_employees"`, `query=<normalized input>`, `heuristic="rank employees by score descending"`, `filter={}` — log as WARNING, never raise
 
 ***Deliverables***
-- `rewrite_query(normalized: str) -> RewriteResult` function: calls GPT-4.1 mini, parses the JSON output into `RewriteResult`; on any exception returns the fallback `RewriteResult` and emits a WARNING log
+- `rewrite_query(normalized: str) -> QueryAnalysis` function: calls GPT-4.1 mini, parses the JSON output into `QueryAnalysis`; on any exception returns the fallback `QueryAnalysis` and emits a WARNING log
 - System prompt stored as a versioned constant (not inlined), covering the spec's two example cases
 - Unit tests using mocked OpenAI responses asserting correct field mapping for `find_employees` and `others` intents, and verifying the fallback path
 
@@ -89,7 +89,7 @@ class QueryRequest:
 #### Q3.1 — Step 3: Embed query & pgvector search
 
 ***Description***
-- Embed `RewriteResult.query` using `all-MiniLM-L6-v2` (same model and pipeline as ETL Step 5) to produce a 384-dim L2-normalised vector
+- Embed `QueryAnalysis.query` using `all-MiniLM-L6-v2` (same model and pipeline as ETL Step 5) to produce a 384-dim L2-normalised vector
 - Run cosine similarity search against `skills_search_index`:
 
 ```sql
@@ -104,11 +104,11 @@ ORDER BY score DESC
 LIMIT 100;
 ```
 
-- Apply `RewriteResult.filter` as a GIN `@>` condition only when the filter dict is non-empty
+- Apply `QueryAnalysis.filter` as a GIN `@>` condition only when the filter dict is non-empty
 - Return a list of `ChunkHit` objects
 
 ***Deliverables***
-- `retrieve(rewrite: RewriteResult) -> list[ChunkHit]` function: embeds the rewritten query, executes the parameterised SQL, applies the GIN filter when present, returns up to 100 `ChunkHit` objects ordered by score descending
+- `retrieve(rewrite: QueryAnalysis) -> list[ChunkHit]` function: embeds the rewritten query, executes the parameterised SQL, applies the GIN filter when present, returns up to 100 `ChunkHit` objects ordered by score descending
 - Query uses parameterised values only — no string interpolation
 - Unit test: with an empty filter dict, the `WHERE metadata @> ...` clause is omitted from the executed SQL
 
@@ -155,7 +155,7 @@ LIMIT 100;
 #### Q5.2 — Step 5b: Compute & format response
 
 ***Description***
-- Branch on `RewriteResult.intent`:
+- Branch on `QueryAnalysis.intent`:
 
 **`find_employees`** — pass employee records, scores, chunk evidence, and `heuristic` to GPT-4.1 mini:
 - The model uses `heuristic` to re-rank or filter the list
@@ -249,7 +249,7 @@ Body: { "query": "Who has Java backend experience and good English?" }
 #### Q7.2 — Resilience
 
 ***Description***
-- `rewrite_query` LLM failure → fall back to default `RewriteResult` (already defined in Q2.2)
+- `rewrite_query` LLM failure → fall back to default `QueryAnalysis` (already defined in Q2.2)
 - `respond` LLM failure for `find_employees` → return the aggregated list without `match_reason` (set to `None`), log as WARNING
 - Embedding failure in `retrieve` → return `500` to caller, log as ERROR, do not partially respond
 - Score threshold for `others` counts is configurable (Q5.2) to avoid hard-coding business logic
