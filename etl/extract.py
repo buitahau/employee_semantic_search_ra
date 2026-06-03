@@ -258,6 +258,12 @@ def get_user_skills(employee_id: int) -> list[UserSkill]:
         return _get_user_skills(cur, employee_id)
 
 
+def get_all_employee_ids() -> list[int]:
+    with _connect() as cur:
+        cur.execute("SELECT id FROM users ORDER BY id;")
+        return [row["id"] for row in cur.fetchall()]
+
+
 def extract_employee(employee_id: int) -> EmployeeData:
     with _connect() as cur:
         return EmployeeData(
