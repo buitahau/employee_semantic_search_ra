@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from common.types import EmployeeData
+
 
 @dataclass
 class QueryRequest:
@@ -21,3 +23,5 @@ class ChunkHit:
     chunk_text:  str
     metadata:    dict
     score:       float
+    distance:    float
+    employee_data: EmployeeData | None = None
