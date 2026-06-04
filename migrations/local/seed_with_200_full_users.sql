@@ -458,6 +458,7 @@ INSERT INTO skills (name, skill_group_id) VALUES
     ('GraphQL',         1),
     -- Frontend (group 2)
     ('React',           2),
+    ('JavaScript',     2),
     ('Angular',         2),
     ('Vue.js',          2),
     ('HTML/CSS',        2),
