@@ -15,6 +15,7 @@ _SQL_BASE = """
         field_type,
         chunk_text,
         metadata,
+        embedding <=> %s::vector AS distance,
         1 - (embedding <=> %s::vector) AS similarity
     FROM skills_search_index
     {where}
@@ -29,10 +30,10 @@ def retrieve(analysis: QueryAnalysis) -> list[ChunkHit]:
 
     if analysis.filter:
         sql = _SQL_BASE.format(where="WHERE metadata @> %s::jsonb")
-        params = (vector_str, json.dumps(analysis.filter), vector_str)
+        params = (vector_str, vector_str, json.dumps(analysis.filter), vector_str)
     else:
         sql = _SQL_BASE.format(where="")
-        params = (vector_str, vector_str)
+        params = (vector_str, vector_str, vector_str)
 
     with _vector_connect() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -46,6 +47,7 @@ def retrieve(analysis: QueryAnalysis) -> list[ChunkHit]:
             chunk_text=row["chunk_text"],
             metadata=dict(row["metadata"]),
             score=float(row["similarity"]),
+            distance=float(row["distance"]),
         )
         for row in rows
     ]

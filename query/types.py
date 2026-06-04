@@ -21,3 +21,4 @@ class ChunkHit:
     chunk_text:  str
     metadata:    dict
     score:       float
+    distance:    float
