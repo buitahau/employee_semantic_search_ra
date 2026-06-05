@@ -55,8 +55,22 @@ def _l2_normalize(vector: np.ndarray) -> np.ndarray:
     return vector / norm
 
 
-def embed(text: str) -> list[float]:
-    input_ids, attention_mask, token_type_ids = _tokenize(text)
+def embed(text: str, prefix: str = "passage") -> list[float]:
+    """Generate embedding vector for text.
+
+    Args:
+        text: Input text to embed
+        prefix: "query" for search queries, "passage" for documents (default: "passage")
+                Required for E5 models to achieve optimal performance.
+
+    Returns:
+        384-dimensional embedding vector as list of floats
+    """
+    # E5 models require prefixes for optimal performance
+    # See: https://huggingface.co/intfloat/multilingual-e5-small
+    prefixed_text = f"{prefix}: {text}"
+
+    input_ids, attention_mask, token_type_ids = _tokenize(prefixed_text)
     outputs = _get_session().run(
         ["last_hidden_state"],
         {

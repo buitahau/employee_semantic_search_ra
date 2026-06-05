@@ -25,7 +25,8 @@ _SQL_BASE = """
 
 
 def retrieve(analysis: QueryAnalysis) -> list[ChunkHit]:
-    vector = embed(analysis.query)
+    # Use "query" prefix for search queries (E5 model requirement)
+    vector = embed(analysis.query, prefix="query")
     vector_str = json.dumps(vector)
 
     if analysis.filter:
