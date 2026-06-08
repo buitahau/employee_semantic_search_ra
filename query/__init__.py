@@ -15,7 +15,8 @@ def search(query: str) -> dict:
     re_ranked_hits = re_rank(deduped_hits)
     return {
         "query": asdict(analysis),
-        "re_ranked_hits": [asdict(h) for h in re_ranked_hits],
-        "deduped_hits": [asdict(h) for h in deduped_hits],
-        # "hits": [asdict(h) for h in hits]
-        } 
+        "response": {"total": len(re_ranked_hits), "data": [asdict(h) for h in re_ranked_hits]},
+        "re_ranked_hits": {"total": len(re_ranked_hits), "data": [asdict(h) for h in re_ranked_hits]},
+        "deduped_hits": {"total": len(deduped_hits), "data": [asdict(h) for h in deduped_hits]},
+        # "hits": {"total": len(hits), "data": [asdict(h) for h in hits]},
+        }
