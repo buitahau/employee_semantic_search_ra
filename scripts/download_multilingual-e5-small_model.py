@@ -18,6 +18,7 @@ ONNX_DEST_NAME = f"{MODEL_NAME}.onnx"
 
 
 def main() -> None:
+    """Download multilingual-e5-small ONNX model and tokenizer files from HuggingFace Hub."""
     try:
         from huggingface_hub import hf_hub_download
     except ImportError:

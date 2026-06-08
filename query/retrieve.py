@@ -25,6 +25,7 @@ _SQL_BASE = """
 
 
 def retrieve(analysis: QueryAnalysis) -> list[ChunkHit]:
+    """Execute vector similarity search for the given query analysis and return ranked chunk hits."""
     # Use "query" prefix for search queries (E5 model requirement)
     vector = embed(analysis.query, prefix="query")
     vector_str = json.dumps(vector)

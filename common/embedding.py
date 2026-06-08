@@ -11,6 +11,7 @@ _tokenizer: Tokenizer | None = None
 
 
 def _get_session() -> ort.InferenceSession:
+    """Return the singleton ONNX inference session, initializing it on first call."""
     global _session
     if _session is None:
         _session = ort.InferenceSession(
@@ -21,6 +22,7 @@ def _get_session() -> ort.InferenceSession:
 
 
 def _get_enc_tokenizer() -> Tokenizer:
+    """Return the singleton tokenizer for inference, with truncation at 512 tokens and no padding."""
     # Separate singleton from chunking's _get_tokenizer(): chunking configures
     # no_truncation(), but inference requires truncation at 512 (BERT limit).
     global _tokenizer
@@ -33,6 +35,7 @@ def _get_enc_tokenizer() -> Tokenizer:
 
 
 def _tokenize(text: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Tokenize text and return (input_ids, attention_mask, token_type_ids) as batched numpy arrays."""
     encoding = _get_enc_tokenizer().encode(text)
     ids = np.array(encoding.ids, dtype=np.int64).reshape(1, -1)
     seq_len = ids.shape[1]
@@ -42,6 +45,7 @@ def _tokenize(text: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def _mean_pool(token_embeddings: np.ndarray, attention_mask: np.ndarray) -> np.ndarray:
+    """Average token embeddings weighted by the attention mask."""
     mask = attention_mask[:, :, np.newaxis]               # (1, seq_len, 1)
     masked_sum = (token_embeddings * mask).sum(axis=1)    # (1, 384)
     token_count = max(attention_mask.sum(), 1)
@@ -49,6 +53,7 @@ def _mean_pool(token_embeddings: np.ndarray, attention_mask: np.ndarray) -> np.n
 
 
 def _l2_normalize(vector: np.ndarray) -> np.ndarray:
+    """L2-normalize a vector; returns the original vector unchanged if its norm is zero."""
     norm = np.linalg.norm(vector)
     if norm == 0.0:
         return vector
