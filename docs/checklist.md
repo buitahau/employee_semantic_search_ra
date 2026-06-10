@@ -2,7 +2,7 @@
 
 ## Core Features
 
-- [x] Complete the basic semantic search flow (ETL and search).
+- ✅ Complete the basic semantic search flow (ETL and search). 
 
 ## Indexing Quality
 
@@ -12,7 +12,7 @@
 
 ## Result Generation
 
-- [ ] [Define structure and generate the client response based on the intent.](implementation_plan/tasks/Client-respond.md)
+- ❌ ~~[Define structure and generate the client response based on the intent.](implementation_plan/tasks/Client-respond.md)~~
 
 ## Search Quality Validation
 
