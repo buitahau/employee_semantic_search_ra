@@ -1,7 +1,9 @@
 # Client Response Generation
 
 **Phase:** 5 — Hydration & Response  
-**Status:** todo
+**Status:** cancelled
+
+> **Cancellation reason:** Response generation (re-ranking, `match_reason` population, and final response shaping) will be handled by a dedicated LLM service. This module is not needed in the current architecture.
 
 ---
 
