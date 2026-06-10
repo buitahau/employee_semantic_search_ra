@@ -20,7 +20,7 @@
 | 6 | [nomic-embed-text-v1.5](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5) | 109 | N/A | 0.14 | 768 | 8192 | 44.10 | 37.84 | No (EN only) | mit |
 | 7 | [snowflake-arctic-embed-l-v2.0](https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0) | 59 | 0.31 | 0.57 | 1024 | 8192 | 57.03 | 49.95 | Yes (74 langs) | apache 2.0 |
 | 8 | [snowflake-arctic-embed-m-v2.0](https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0) | 71 | 0.11 | 0.30 | 768 | 8192 | 53.70 | 46.89 | Yes (74 langs) | apache 2.0 |
-| 9 | [bge-m3](https://huggingface.co/BAAI/bge-m3) | 48 | 0.31 | 0.57 | 1024 | 8194 | 59.55 | 52.17 | No (EN only) | mit |
+| 9 | [bge-m3](https://huggingface.co/BAAI/bge-m3) | 48 | 0.31 | 0.57 | 1024 | 8194 | 59.55 | 52.17 | Yes (100+ langs) | mit |
 | 10 | [bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5) | 91 | 0.30 | 0.34 | 1024 | 512 | 45.08 | 39.06 | No (EN only) | mit |
 | 11 | [multilingual-e5-base](https://huggingface.co/intfloat/multilingual-e5-base) | 63 | 0.09 | 0.28 | 768 | 514 | 57.03 | 49.84 | Yes (94 langs) | mit |
 | 12 | [multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small) | 66 | 0.02 | 0.12 | 384 | 512 | 56.35 | 49.45 | Yes (94 langs) | mit |

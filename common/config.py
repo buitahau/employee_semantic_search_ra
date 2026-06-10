@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     vector_db: VectorDBConfig = VectorDBConfig()
     openai_api_key: str = ""
     embedding_model_path: str = "models/all-MiniLM-L6-v2.onnx"
+    embedding_dim: int = 384
     embedding_service_url: str | None = None
 
 

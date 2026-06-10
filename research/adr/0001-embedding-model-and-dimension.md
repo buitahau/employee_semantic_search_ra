@@ -147,9 +147,9 @@ CVs frequently exceed 512 tokens. At 8,194 max tokens, bge-m3 can embed a full C
 
 ```sql
 -- Drop and recreate vector column at 1024 dims
-ALTER TABLE employee_embeddings
+ALTER TABLE skills_search_index
   DROP COLUMN embedding;
-ALTER TABLE employee_embeddings
+ALTER TABLE skills_search_index
   ADD COLUMN embedding vector(1024);
 ```
 

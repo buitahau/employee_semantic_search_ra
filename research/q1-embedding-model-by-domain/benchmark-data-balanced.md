@@ -22,7 +22,7 @@
 | nomic-embed-text-v1.5 | 768 | N/A | 0.14 | 8192 | 44.10 | 37.84 | 34.09 | 59.45 | No (EN only) | mit |
 | snowflake-arctic-embed-l-v2.0 | 1024 | 0.31 | 0.57 | 8192 | 57.03 | 49.95 | 58.36 | 70.11 | Yes (74 langs) | apache 2.0 |
 | snowflake-arctic-embed-m-v2.0 | 768 | 0.11 | 0.30 | 8192 | 53.70 | 46.89 | 54.83 | 66.60 | Yes (74 langs) | apache 2.0 |
-| bge-m3 | 1024 | 0.31 | 0.57 | 8194 | 59.55 | 52.17 | 54.59 | 74.12 | No (EN only) | mit |
+| bge-m3 | 1024 | 0.31 | 0.57 | 8194 | 59.55 | 52.17 | 54.59 | 74.12 | Yes (100+ langs) | mit |
 | bge-large-en-v1.5 | 1024 | 0.30 | 0.34 | 512 | 45.08 | 39.06 | 39.00 | 60.14 | No (EN only) | mit |
 | multilingual-e5-base | 768 | 0.09 | 0.28 | 514 | 57.03 | 49.84 | 52.72 | 71.44 | Yes (94 langs) | mit |
 | multilingual-e5-small | 384 | 0.02 | 0.12 | 512 | 56.35 | 49.45 | 50.91 | 71.74 | Yes (94 langs) | mit |
