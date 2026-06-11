@@ -1,4 +1,4 @@
-# Contextual Headers
+# IQ1 — Contextual Headers
 
 **Phase:** 3 — Transform
 **Status:** todo
@@ -15,5 +15,5 @@ This task prepends a structured header to each context section **before** chunki
 
 ## Deliverables Checklist
 
-- [ ] Update `docs/implementation_plan/task/Contextual-headers.md` file that specifies the exact header template for each context section (CV, Experience, Training, etc.), field definitions, and examples.
+- [ ] Update `docs/implementation_plan/tasks/IQ1-Contextual-headers.md` file that specifies the exact header template for each context section (CV, Experience, Training, etc.), field definitions, and examples.
 - [ ] Implementation that prepends the structured header to each context section before it is passed to the chunker, without breaking existing chunking or embedding behavior.

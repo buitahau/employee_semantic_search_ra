@@ -1,4 +1,4 @@
-# Field Mapping Table
+# IQ2 — Field Mapping Table
 
 **Phase:** 2 — Extract
 **Status:** todo
@@ -15,5 +15,5 @@ This task creates a comprehensive field mapping document that lists every source
 
 ## Deliverables Checklist
 
-- [ ] Update `docs/implementation_plan/tasks/Field-mapping-table.md` with a detailed mapping of every source table and field used to retrieve data.
+- [ ] Update `docs/implementation_plan/tasks/IQ2-Field-mapping-table.md` with a detailed mapping of every source table and field used to retrieve data.
 - [ ] Update the ETL source code so it follows the field mapping table.

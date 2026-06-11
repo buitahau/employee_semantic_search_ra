@@ -1,4 +1,4 @@
-# Search Quality Report
+# SQV3 — Search Quality Report
 
 **Phase:** Search Quality Validation  
 **Status:** todo

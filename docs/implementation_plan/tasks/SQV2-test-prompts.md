@@ -1,4 +1,4 @@
-# Search Quality Test Prompts
+# SQV2 — Search Quality Test Prompts
 
 **Phase:** Search Quality Validation  
 **Status:** todo
