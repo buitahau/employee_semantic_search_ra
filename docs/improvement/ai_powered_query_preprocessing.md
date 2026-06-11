@@ -1,6 +1,6 @@
 ## AI-Powered Query Preprocessing
 
-**Status:** Open
+**Status:** Ready
 
 Before passing the user's search prompt to the embedding/retrieval pipeline, route it through an AI model to improve query quality. 
 

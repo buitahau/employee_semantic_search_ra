@@ -1,4 +1,4 @@
-# Client Response Generation
+# RG1 — Client Response Generation
 
 **Phase:** 5 — Hydration & Response  
 **Status:** cancelled

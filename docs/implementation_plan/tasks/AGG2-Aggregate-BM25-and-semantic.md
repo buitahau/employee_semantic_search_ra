@@ -1,7 +1,11 @@
-# Aggregate BM25 and Semantic Results
+# AGG2 — Aggregate BM25 and Semantic Results
 
 **Phase:** Query
+
 **Status:** todo
+
+
+**Depend:** AGG1
 
 ---
 

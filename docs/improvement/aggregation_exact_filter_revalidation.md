@@ -1,6 +1,6 @@
 ## Aggregation with Exact Filter Revalidation
 
-**Status:** Open
+**Status:** Ready
 
 Currently, the input for the aggregation step comes only from the semantic search results returned by pgvector.
 
