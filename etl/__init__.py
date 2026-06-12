@@ -7,7 +7,7 @@ from etl.transform import transform
 
 _logger = get_logger(__name__)
 
-_STATE_ATTRS = ("cv", "experiences", "employment_histories", "trainings", "task", "skills")
+_STATE_ATTRS = ("user_detail", "cv", "experiences", "employment_histories", "trainings", "task", "skills")
 
 
 def _collect_chunks(state: EtlPipelineState) -> list[ChunkRecord]:

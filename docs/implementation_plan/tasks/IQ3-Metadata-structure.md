@@ -42,6 +42,140 @@ The metadata schema drives two downstream improvements:
 
 ---
 
+## Metadata Schema per Section Type
+
+All chunks share two required base fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `section` | `string` | Section type identifier (see values below) |
+| `employee_id` | `integer` | Source user ID |
+
+---
+
+### `user_detail`
+
+Chunk of the employee's profile (position, level, contract, university, etc.). Always present — used as fallback when CV is missing.
+
+**Required**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `section` | `string` | `"user_detail"` |
+| `employee_id` | `integer` | `001` |
+| `company_email` | `string` | `"abc@owt.swiss"` |
+| `gender` | `string` | `"MALE"` · `"FEMALE"` |
+| `start_date` | `string (ISO 8601)` | `"2023-06-26T00:00:00"` |
+
+**Optional**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `first_name` | `string \| null` | `"A"` |
+| `last_name` | `string \| null` | `"Nguyen Van"` |
+| `date_of_birth` | `string (YYYY-MM-DD) \| null` | `"1990-01-10"` |
+| `university` | `string \| null` | `"Da Nang University"` |
+| `position` | `string \| null` | `"Dev"` |
+| `level` | `string \| null` | `"Senior"` |
+
+---
+
+### `cv`
+
+Chunk of the CV narrative text (introduction and/or body `cv` field).
+
+**Required**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `section` | `string` | `"cv"` |
+| `employee_id` | `integer` | `42` |
+
+**Optional**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `custom_position` | `string \| null` | `"Full-Stack Developer"` |
+
+---
+
+### `experiences`
+
+One chunk aggregating all project experience entries for the employee. Skills are deduplicated across all entries.
+
+**Required**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `section` | `string` | `"experiences"` |
+| `employee_id` | `integer` | `42` |
+
+**Optional**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `skills` | `string[]` | `["Python", "AWS Lambda"]` |
+
+---
+
+### `employment_histories`
+
+One chunk aggregating all external employment history entries for the employee.
+
+**Required**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `section` | `string` | `"employment_histories"` |
+| `employee_id` | `integer` | `42` |
+
+---
+
+### `trainings`
+
+One chunk aggregating all training/certification records for the employee.
+
+**Required**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `section` | `string` | `"trainings"` |
+| `employee_id` | `integer` | `42` |
+
+---
+
+### `task`
+
+One chunk aggregating all task assignments for the employee.
+
+**Required**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `section` | `string` | `"task"` |
+| `employee_id` | `integer` | `42` |
+
+---
+
+### `skills`
+
+One chunk aggregating all skill entries for the employee. Skill names are deduplicated and collected into a list.
+
+**Required**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `section` | `string` | `"skills"` |
+| `employee_id` | `integer` | `42` |
+
+**Optional**
+
+| Field | Type | Example |
+|-------|------|---------|
+| `skills` | `string[]` | `["AWS Lambda", "Python"]` |
+
+---
+
 ## Deliverables Checklist
-- [ ] For each section type, document the required and optional metadata fields with their types and example values in this file.
-- [ ] Update `etl/transform.py` so every chunk is emitted with metadata that conforms to the defined structure.
+- [x] For each section type, document the required and optional metadata fields with their types and example values in this file.
+- [x] Update `etl/transform.py` so every chunk is emitted with metadata that conforms to the defined structure.

@@ -4,7 +4,7 @@ from common.states import EtlPipelineState
 
 _SENT_BOUNDARY = re.compile(r'(?<=[.!?])\s+')
 
-_STATE_ATTRS = ("cv", "experiences", "employment_histories", "trainings", "task", "skills")
+_STATE_ATTRS = ("user_detail", "cv", "experiences", "employment_histories", "trainings", "task", "skills")
 
 
 def _split_sentences(text: str) -> list[tuple[str, int, int]]:

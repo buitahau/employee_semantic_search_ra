@@ -10,6 +10,6 @@ def transform(raw: EmployeeData) -> EtlPipelineState:
     data = normalize(raw)               # T3.1 — text normalization
     # data = ai_cleanup(data)           # T3.2 — AI cleanup (not yet implemented)
     state = to_pipeline_state(data)     # combine fields → text per entity
-    state = enrich_with_metadata(state) # T3.3 — metadata extraction
+    state = enrich_with_metadata(state, data) # T3.3 — metadata extraction
     state = chunking(state)             # T3.4 + T3.5 — chunking and embedding
     return state

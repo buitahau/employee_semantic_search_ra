@@ -3,6 +3,7 @@ from common.states import EtlPipelineState
 from common.types import ChunkRecord
 
 _FIELD_TYPE_BY_ATTR: dict[str, str] = {
+    "user_detail": "user_detail",
     "cv": "cv",
     "experiences": "experience",
     "employment_histories": "employment_history",

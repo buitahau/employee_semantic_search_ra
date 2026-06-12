@@ -7,7 +7,7 @@ from common.states import EtlPipelineState
 
 _tokenizer: Tokenizer | None = None
 
-_STATE_ATTRS = ("cv", "experiences", "employment_histories", "trainings", "task", "skills")
+_STATE_ATTRS = ("user_detail", "cv", "experiences", "employment_histories", "trainings", "task", "skills")
 
 
 def _get_tokenizer() -> Tokenizer:

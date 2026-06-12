@@ -1,7 +1,7 @@
 from common.states import EtlPipelineState
 from etl.impl.transform.chunking.embedding.encoder import embed
 
-_STATE_ATTRS = ("cv", "experiences", "employment_histories", "trainings", "task", "skills")
+_STATE_ATTRS = ("user_detail", "cv", "experiences", "employment_histories", "trainings", "task", "skills")
 
 
 def embed_chunks(state: EtlPipelineState) -> EtlPipelineState:

@@ -17,7 +17,6 @@ _SQL_BASE = """
         metadata,
         1 - (embedding <=> %s::vector) AS similarity
     FROM skills_search_index
-    {where}
     ORDER BY embedding <=> %s::vector
     LIMIT 100
 """
@@ -26,13 +25,8 @@ _SQL_BASE = """
 def retrieve(analysis: QueryAnalysis) -> list[ChunkHit]:
     vector = embed(analysis.query)
     vector_str = json.dumps(vector)
-
-    if analysis.filter:
-        sql = _SQL_BASE.format(where="WHERE metadata @> %s::jsonb")
-        params = (vector_str, json.dumps(analysis.filter), vector_str)
-    else:
-        sql = _SQL_BASE.format(where="")
-        params = (vector_str, vector_str)
+    params = (vector_str, vector_str)
+    sql = _SQL_BASE
 
     with _vector_connect() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:

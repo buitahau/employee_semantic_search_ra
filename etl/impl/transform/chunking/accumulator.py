@@ -7,6 +7,7 @@ TOKENS_MAX = 250
 OVERLAP_MIN = 40
 
 _TOKENS_MAX_BY_ATTR: dict[str, int] = {
+    "user_detail": 200,
     "cv": TOKENS_MAX,
     "experiences": TOKENS_MAX,
     "employment_histories": 200,
@@ -16,6 +17,7 @@ _TOKENS_MAX_BY_ATTR: dict[str, int] = {
 }
 
 _PREFIX_BY_ATTR: dict[str, str] = {
+    "user_detail": "Profile: ",
     "cv": "CV: ",
     "experiences": "Experience: ",
     "employment_histories": "Employment: ",
