@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
-import query
+from  query.search import query
 
 router = APIRouter()
 
@@ -23,7 +23,7 @@ class SearchRequest(BaseModel):
 @router.post("/search")
 async def search(body: SearchRequest):
     try:
-        result = query.search(body.query)
+        result = query(body.query)
         return Response(
             content=json.dumps(result, default=_default),
             status_code=200,

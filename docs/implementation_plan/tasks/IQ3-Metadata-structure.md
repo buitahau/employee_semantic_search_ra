@@ -65,8 +65,7 @@ Chunk of the employee's profile (position, level, contract, university, etc.). A
 | `employee_id` | `integer` | `001` |
 | `company_email` | `string` | `"abc@owt.swiss"` |
 | `gender` | `string` | `"MALE"` · `"FEMALE"` |
-| `contract_type` | `string` | `"FULLTIME"` · `"PART_TIME"` · `"INTERN"` |
-| `start_date` | `string (YYYY-MM-DD)` | `"2023-06-26"` |
+| `start_date` | `string (ISO 8601)` | `"2023-06-26T00:00:00"` |
 
 **Optional**
 
@@ -102,7 +101,7 @@ Chunk of the CV narrative text (introduction and/or body `cv` field).
 
 ### `experiences`
 
-One chunk per project experience entry.
+One chunk aggregating all project experience entries for the employee. Skills are deduplicated across all entries.
 
 **Required**
 
@@ -110,23 +109,18 @@ One chunk per project experience entry.
 |-------|------|---------|
 | `section` | `string` | `"experiences"` |
 | `employee_id` | `integer` | `42` |
-| `is_currently_working` | `boolean` | `false` |
-| `date_from` | `string (YYYY-MM-DD)` | `"2021-03-01"` |
 
 **Optional**
 
 | Field | Type | Example |
 |-------|------|---------|
-| `project_name` | `string \| null` | `"Acme Platform"` |
-| `domain` | `string \| null` | `"FinTech"` |
-| `date_to` | `string (YYYY-MM-DD) \| null` | `"2023-08-01"` |
 | `skills` | `string[]` | `["Python", "AWS Lambda"]` |
 
 ---
 
 ### `employment_histories`
 
-One chunk per external employment history entry.
+One chunk aggregating all external employment history entries for the employee.
 
 **Required**
 
@@ -134,21 +128,12 @@ One chunk per external employment history entry.
 |-------|------|---------|
 | `section` | `string` | `"employment_histories"` |
 | `employee_id` | `integer` | `42` |
-| `is_currently_working` | `boolean` | `false` |
-| `date_from` | `string (YYYY-MM-DD)` | `"2018-06-01"` |
-
-**Optional**
-
-| Field | Type | Example |
-|-------|------|---------|
-| `company` | `string \| null` | `"Acme Corp"` |
-| `date_to` | `string (YYYY-MM-DD) \| null` | `"2021-02-28"` |
 
 ---
 
 ### `trainings`
 
-One chunk per training/certification record.
+One chunk aggregating all training/certification records for the employee.
 
 **Required**
 
@@ -156,21 +141,12 @@ One chunk per training/certification record.
 |-------|------|---------|
 | `section` | `string` | `"trainings"` |
 | `employee_id` | `integer` | `42` |
-| `training_date` | `string (YYYY-MM-DD)` | `"2023-05-10"` |
-
-**Optional**
-
-| Field | Type | Example |
-|-------|------|---------|
-| `training_title` | `string \| null` | `"AWS Solutions Architect"` |
-| `topic_label` | `string \| null` | `"Cloud"` |
-| `level_label` | `string \| null` | `"Advanced"` |
 
 ---
 
 ### `task`
 
-One chunk per task assignment.
+One chunk aggregating all task assignments for the employee.
 
 **Required**
 
@@ -179,18 +155,11 @@ One chunk per task assignment.
 | `section` | `string` | `"task"` |
 | `employee_id` | `integer` | `42` |
 
-**Optional**
-
-| Field | Type | Example |
-|-------|------|---------|
-| `title` | `string \| null` | `"Migrate CI pipeline to GitHub Actions"` |
-| `category_label` | `string \| null` | `"DevOps"` |
-
 ---
 
 ### `skills`
 
-One chunk per skill entry.
+One chunk aggregating all skill entries for the employee. Skill names are deduplicated and collected into a list.
 
 **Required**
 
@@ -198,13 +167,12 @@ One chunk per skill entry.
 |-------|------|---------|
 | `section` | `string` | `"skills"` |
 | `employee_id` | `integer` | `42` |
-| `level` | `integer` | `3` |
 
 **Optional**
 
 | Field | Type | Example |
 |-------|------|---------|
-| `skill_name` | `string \| null` | `"AWS Lambda"` |
+| `skills` | `string[]` | `["AWS Lambda", "Python"]` |
 
 ---
 
