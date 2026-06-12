@@ -10,10 +10,11 @@ class QueryRequest:
 
 @dataclass
 class QueryAnalysis:
-    intent:    str
-    query:     str
-    heuristic: str
-    filter:    dict = field(default_factory=dict)
+    intent:  str
+    query:   str
+    normalized_query: str
+    filter:  dict = field(default_factory=dict)
+    exclude: dict = field(default_factory=dict)
 
 
 @dataclass

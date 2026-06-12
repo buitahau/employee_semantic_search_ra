@@ -21,11 +21,20 @@ class VectorDBConfig(BaseSettings):
     password: str
 
 
+class LLMConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="LLM_", env_file=".env", extra="ignore")
+
+    api_key:  str = ""
+    base_url: str = "https://lightning.ai/api/v1"
+    model:    str = "openai/gpt-4.1-mini"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
     source_db: SourceDBConfig = SourceDBConfig()
     vector_db: VectorDBConfig = VectorDBConfig()
+    llm: LLMConfig = LLMConfig()
     openai_api_key: str = ""
     embedding_model_path: str = "models/all-MiniLM-L6-v2.onnx"
     embedding_service_url: str | None = None
