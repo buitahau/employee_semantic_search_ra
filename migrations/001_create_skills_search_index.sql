@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+
 -- Verify pgvector is available
 SELECT '[1,2,3]'::vector(3);
 

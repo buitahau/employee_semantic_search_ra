@@ -37,52 +37,62 @@ When both modes are used together, structured filters run first to narrow candid
 ### Prerequisites
 
 - Python 3.12
-- Two PostgreSQL instances: the source OWT employee DB and a pgvector-enabled DB for the vector store
+- Docker & Docker Compose (for local databases)
 - The `all-MiniLM-L6-v2` ONNX model (downloaded via `scripts/download_model.py` into `models/all-MiniLM-L6-v2/`)
 
-### Install
+### 1. Start databases
+
+```bash
+docker compose -f docker-compose.yml up -d
+```
+
+This starts two containers:
+- `ra_source_db` — PostgreSQL 16 on port **5433** (source employee DB)
+- `ra_vector_db` — pgvector on port **5434** (vector store)
+
+### 2. Install Python dependencies
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Download the embedding model
+### 3. Download the embedding model
 
 ```bash
 python scripts/download_all-MiniLM-L6-v2_model.py
 ```
 
-Downloads the ONNX model and tokenizer files into `models/all-MiniLM-L6-v2/`. Run it once after install. The script prints the exact `EMBEDDING_MODEL_PATH` value to set in `.env`:
+Downloads the ONNX model and tokenizer into `models/all-MiniLM-L6-v2/`. Run once after install.
 
-```
-EMBEDDING_MODEL_PATH=models/all-MiniLM-L6-v2/all-MiniLM-L6-v2.onnx
-```
-
-### Configure
+### 4. Configure
 
 ```bash
 cp .env.example .env
-# Edit .env and fill in your values:
-#   SOURCE_DB_*        — owt-employee-app-backend database
-#   VECTOR_DB_*        — pgvector database
-#   OPENAI_API_KEY     — GPT-4.1 mini (used in the AI cleanup phase)
-#   EMBEDDING_MODEL_PATH — models/all-MiniLM-L6-v2/all-MiniLM-L6-v2.onnx
+# The default values in .env.example match the docker-compose ports and credentials.
+# Fill in LLM_API_KEY for the AI cleanup phase.
 ```
 
-### Run migrations
+### 5. Run migrations and seed data
 
-Apply the pgvector schema to the vector DB before first use:
+Apply the pgvector schema to the vector DB:
 
 ```bash
-psql -h $VECTOR_DB_HOST -U $VECTOR_DB_USER -d $VECTOR_DB_NAME -f migrations/<migration_file>.sql
+psql -h localhost -p 5434 -U postgres -d vectordb -f migrations/001_create_skills_search_index.sql
 ```
 
-### Start the dev server
+Load local seed data (200 employees) into the source DB:
+
+```bash
+psql -h localhost -p 5433 -U postgres -d postgres -f migrations/local/seed_with_200_full_users.sql
+```
+
+Both commands will prompt for the password (`123456`).
+
+### 6. Start the dev server
 
 ```bash
 source .venv/bin/activate
-
 uvicorn main:app --reload
 ```
 
