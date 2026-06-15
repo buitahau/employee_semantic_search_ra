@@ -24,4 +24,21 @@ class ChunkHit:
     chunk_text:  str
     metadata:    dict
     score:       float
-    employee_data: EmployeeData | None = None
+
+
+@dataclass
+class ExactFilterResult:
+    employee_ids: list[int]
+    matched_count: int
+
+
+@dataclass
+class SemanticSearchResult:
+    hits: list[ChunkHit]
+    matched_count: int
+
+@dataclass
+class SearchResult:
+    query: str
+    total_matches: int
+    results: list[EmployeeData]

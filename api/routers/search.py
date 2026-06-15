@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict
 from datetime import date, datetime
 
 from fastapi import APIRouter
@@ -25,7 +26,7 @@ async def search(body: SearchRequest):
     try:
         result = query(body.query)
         return Response(
-            content=json.dumps(result, default=_default),
+            content=json.dumps(asdict(result), default=_default),
             status_code=200,
             media_type="application/json",
         )
