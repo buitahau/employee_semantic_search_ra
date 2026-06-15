@@ -17,6 +17,8 @@ This task creates a comprehensive field mapping document that lists every source
 
 Each subsection corresponds to one `_get_*` function in `etl/extract.py` and one dataclass in `common/types.py`.
 
+Every extracted field listed below is ingested into pgvector: `etl/impl/transform/state_builder.py::to_pipeline_state` joins all fields of each section into that section's `text`, which is chunked and embedded. A subset of fields is additionally surfaced as structured `metadata` on each chunk per `etl/impl/transform/metadata.py` (see IQ3 for the per-section metadata schema) — that subset is documentation/filtering convenience, not a different ingestion path.
+
 ### `user_detail` → `UserDetail`
 
 Source: `users`, left-joined to `positions` (`position_id`) and `user_levels` (`level_id`, nullable FK).
@@ -123,7 +125,7 @@ Filter: `task_assignments_assignees.user_id = employee_id` (join on `task_assign
 
 ---
 
-### `skills` → `list[UserSkill]`
+### `user_skills` → `list[UserSkill]`
 
 Source: `user_skills`, joined to `skills` on `skill_id`.
 
@@ -148,4 +150,4 @@ Filter: `user_skills.user_id = employee_id AND user_skills.is_selected = true`. 
 ## Deliverables Checklist
 
 - [x] Update `docs/implementation_plan/tasks/IQ2-Field-mapping-table.md` with a detailed mapping of every source table and field used to retrieve data.
-- [x] Update the ETL source code so it follows the field mapping table.
+- [x] Verify the ETL source code follows the field mapping table, updating it if any discrepancy is found. `etl/extract.py` and `common/types.py` were audited against the table above and already align 1:1 — no code changes were required.
