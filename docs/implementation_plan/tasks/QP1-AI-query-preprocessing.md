@@ -33,13 +33,36 @@ analyze_query will be enhanced to invoke GPT-4.1 Mini and return:
 
 - intent — the predicted intent (find_employee, count_employee, or other)
 
-- heuristic — optional plain-language instructions to guide later ranking or filtering steps
+- filter — structured inclusion filters extracted from the query; only employees matching all specified fields are retrieved
 
-- filter — structured filters extracted from the query when applicable
+- exclude — structured exclusion filters extracted from the query; employees matching any specified field are removed from results
+
+Both `filter` and `exclude` share the same field schema, derived from the indexed metadata:
+
+| Field | Type | Source |
+|---|---|---|
+| `employee_id` | integer | all sections |
+| `company_email` | string | `user_detail` |
+| `gender` | string | `user_detail` |
+| `position` | string | `user_detail` |
+| `level` | string | `user_detail` |
+| `university` | string | `user_detail` |
+| `skills` | list of strings | `experiences`, `skills` |
+| `section` | string | all sections |
+
+Example filter / exclude object:
+```json
+{
+  "gender": "female",
+  "skills": ["Python", "AWS"],
+  "level": "senior"
+}
+```
 
 ---
 
 ## Deliverables Checklist
-- [ ] Update AI-query-preprocessing.md to define the JSON structure returned by the LLM.
-- [ ] Update analyze_query to invoke LLM and parse the response.
-- [ ] `OPENAI_API_KEY` consumed from `common/config.py` `settings` — no direct `os.environ` access
+- [x] Update AI-query-preprocessing.md to define the JSON structure returned by the LLM.
+- [x] Update analyze_query to invoke LLM and parse the response (query, intent, filter, exclude).
+- [x] Add `exclude` field to `QueryAnalysis`.
+- [x] `LIGHTNING_API_KEY` consumed from `common/config.py` `settings` — no direct `os.environ` access

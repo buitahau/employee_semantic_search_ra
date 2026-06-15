@@ -6,11 +6,11 @@
 
 ## Indexing Quality
 
-- ⏳ [IQ1](implementation_plan/tasks/IQ1-Contextual-headers.md) - Prepend contextual headers to content before chunking (document type, candidate name/ID, section, role, skills, etc.) so every resulting chunk is self-contained and improves embedding and reranking quality.
+- 🛠️ [IQ1](implementation_plan/tasks/IQ1-Contextual-headers.md) - Prepend contextual headers to content before chunking (document type, candidate name/ID, section, role, skills, etc.) so every resulting chunk is self-contained and improves embedding and reranking quality.
 
-- ⏳ [IQ2](implementation_plan/tasks/IQ2-Field-mapping-table.md) - Review and provide a detailed mapping table showing exactly which fields from each source table will be ingested into pgvector.
+- 🛠️ [IQ2](implementation_plan/tasks/IQ2-Field-mapping-table.md) - Review and provide a detailed mapping table showing exactly which fields from each source table will be ingested into pgvector.
 
-- ⏳ [IQ3](implementation_plan/tasks/IQ3-Metadata-structure.md) - Define the canonical metadata structure for each section type stored in pgvector (e.g., experience, skills, education), specifying required/optional fields and types to enable consistent filtering and contextual header generation.
+- ✅ [IQ3](implementation_plan/tasks/IQ3-Metadata-structure.md) - Define the canonical metadata structure for each section type stored in pgvector (e.g., experience, skills, education), specifying required/optional fields and types to enable consistent filtering and contextual header generation.
 
 ## Result Generation
 
@@ -22,7 +22,7 @@
 
 [Refer](implementation_plan/improvement/ai_powered_query_preprocessing.md)
 
-- ⏳ [QP1](implementation_plan/tasks/QP1-AI-query-preprocessing.md) - AI-powered query preprocessing: rewrite noisy input and detect others data before embedding
+- ✅ [QP1](implementation_plan/tasks/QP1-AI-query-preprocessing.md) - AI-powered query preprocessing: rewrite noisy input and detect others data before embedding
 
 ### Aggregation with Exact Filter Revalidation
 
@@ -30,7 +30,7 @@
 
 - ⏳ [AGG1](implementation_plan/tasks/AGG1-BM25-search.md) - Implement BM25 search
 - ⏳ [AGG2](implementation_plan/tasks/AGG2-Aggregate-BM25-and-semantic.md) - Aggregate BM25 results and Semantic results from pgvector
-- ⏳ [AGG3](implementation_plan/tasks/AGG3-Exact-filter.md) - Implement exact filter
+- 🛠️ [AGG3](implementation_plan/tasks/AGG3-Exact-filter.md) - Implement exact filter
 - ⏳ [AGG4](implementation_plan/tasks/AGG4-Aggregate-Exact-filter-and-semantic.md) - Aggregate exact-match retrieval results and semantic results
 
 ## Negation and Complex Condition Handling
