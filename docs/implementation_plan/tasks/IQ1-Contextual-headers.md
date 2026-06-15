@@ -17,7 +17,7 @@ This task prepends a structured header to each context section **before** chunki
 
 A single line, prepended to the section's text, separated by a blank line:
 
-```
+```text
 [Employee: {first_name} {last_name} ({trigram}) | Position: {position} | Level: {level} | Section: {section_label}]
 
 {original section text}
@@ -43,7 +43,7 @@ A single line, prepended to the section's text, separated by a blank line:
 
 Full identity:
 
-```
+```text
 [Employee: Jane Doe (JDO) | Position: Software Engineer | Level: Senior | Section: Experience]
 
 Worked on the OWT Employee App Search project as a backend developer...
@@ -51,7 +51,7 @@ Worked on the OWT Employee App Search project as a backend developer...
 
 Missing level:
 
-```
+```text
 [Employee: Jane Doe (JDO) | Position: Software Engineer | Section: Training]
 
 AWS Certified Solutions Architect ...
@@ -59,7 +59,7 @@ AWS Certified Solutions Architect ...
 
 No `user_detail`:
 
-```
+```text
 [Section: CV]
 
 Experienced backend engineer with 5 years...
@@ -69,9 +69,9 @@ Experienced backend engineer with 5 years...
 
 ## Implementation Notes
 
-- New module: `etl/impl/transform/header.py`, exposing `prepend_headers(state) -> EtlPipelineState`.
+- New module: `etl/impl/transform/header.py`, exposing `prepend_headers(state: EtlPipelineState, user_detail: UserDetail | None) -> EtlPipelineState`.
 - Wired into `etl/transform.py` between `enrich_with_metadata` (T3.3) and `chunking` (T3.4/T3.5), so metadata extraction runs against the original section text and headers are injected immediately before sentence splitting/chunking.
-- Pure, side-effect-free transform consistent with `etl/` conventions.
+- Mutates each entity's `text` in place (prepends the header), consistent with how other `etl/` transform steps mutate the pipeline state.
 
 ---
 
