@@ -78,12 +78,14 @@ cp .env.example .env
 Apply the pgvector schema to the vector DB:
 
 ```bash
+psql -h localhost -p 5434 -U postgres -d vectordb -c "DROP TABLE IF EXISTS skills_search_index;"
 psql -h localhost -p 5434 -U postgres -d vectordb -f migrations/001_create_skills_search_index.sql
 ```
 
-Load local seed data (200 employees) into the source DB:
+Load local seed data (200 employees) into the source DB (the seed file drops and recreates all tables):
 
 ```bash
+psql -h localhost -p 5433 -U postgres -d postgres -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 psql -h localhost -p 5433 -U postgres -d postgres -f migrations/local/seed_with_200_full_users.sql
 ```
 

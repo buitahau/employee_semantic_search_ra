@@ -4,11 +4,18 @@ from dataclasses import dataclass, field
 from litai import LLM
 
 from common.config import settings
+from common.enums import ContractType, Gender, Level, Position
 from query.types import QueryAnalysis
 
 _llm: LLM | None = None
 
-_SYSTEM = """You are a query analysis assistant for an employee skills search system.
+def _build_system_prompt() -> str:
+    genders        = ", ".join(f'"{v}"' for v in Gender)
+    contract_types = ", ".join(f'"{v}"' for v in ContractType)
+    positions      = ", ".join(f'"{v}"' for v in Position)
+    levels         = ", ".join(f'"{v}"' for v in Level)
+
+    return f"""You are a query analysis assistant for an employee skills search system.
 
 Given a raw search query, return a JSON object with exactly these fields:
 
@@ -21,15 +28,16 @@ Given a raw search query, return a JSON object with exactly these fields:
 Both "filter" and "exclude" are objects whose keys are a subset of:
 
 * employee_id (integer)
+* full_name (string)
 * company_email (string)
-* gender (string)
-* position (string)
-* level (string)
-* university (string)
+* gender (string) — allowed values: {genders}
+* contract_type (string) — allowed values: {contract_types}
+* position (string) — allowed values: {positions}
+* level (string) — allowed values: {levels}
 * skills (list of strings)
 * section (string)
 
-Omit any key that is not mentioned in the query. Use an empty object {} when no conditions apply.
+Omit any key that is not mentioned in the query. Use an empty object {{}} when no conditions apply.
 
 Query rewriting rules:
 
@@ -65,32 +73,35 @@ Input:
 "who already do with stakeholder"
 
 Output:
-{
+{{
 "normalized_query": "Who has worked with stakeholders?",
 "query": "stakeholder management stakeholder collaboration business stakeholder communication",
 "intent": "find_employee",
-"filter": {},
-"exclude": {}
-}
+"filter": {{}},
+"exclude": {{}}
+}}
 
 Input:
 "employees with java but not python"
 
 Output:
-{
+{{
 "normalized_query": "Employees with Java but not Python",
 "query": "Java",
 "intent": "find_employee",
-"filter": {
+"filter": {{
 "skills": ["Java"]
-},
-"exclude": {
+}},
+"exclude": {{
 "skills": ["Python"]
-}
-}
+}}
+}}
 
 Respond with valid JSON only. Do not return markdown. Do not return explanations.
 """
+
+
+_SYSTEM = _build_system_prompt()
 
 
 @dataclass
